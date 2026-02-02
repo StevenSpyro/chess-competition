@@ -6,8 +6,8 @@
 #include "SDL_image.h"
 #include "SDL_surface.h"
 #include "imgui.h"
-#include "imgui_impl_sdl.h"
-#include "imgui_impl_sdlrenderer.h"
+#include "imgui_impl_sdl2.h"
+#include "imgui_impl_sdlrenderer2.h"
 #include <SDL.h>
 
 #ifdef __EMSCRIPTEN__
@@ -184,7 +184,7 @@ int main(int argc, char *argv[]) {
 
   // Setup Platform/Renderer backends
   ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
-  ImGui_ImplSDLRenderer_Init(renderer);
+  ImGui_ImplSDLRenderer2_Init(renderer);
 
   ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
@@ -209,7 +209,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Start the Dear ImGui frame
-    ImGui_ImplSDLRenderer_NewFrame();
+    ImGui_ImplSDLRenderer2_NewFrame();
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
 
@@ -342,14 +342,14 @@ int main(int argc, char *argv[]) {
     }
 
     // present ui on top of your drawings
-    ImGui_ImplSDLRenderer_RenderDrawData(ImGui::GetDrawData());
+    ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer);
     SDL_RenderPresent(renderer);
 
     SDL_Delay(0);
   }
 
   // Cleanup
-  ImGui_ImplSDLRenderer_Shutdown();
+  ImGui_ImplSDLRenderer2_Shutdown();
   ImGui_ImplSDL2_Shutdown();
   ImGui::DestroyContext();
 

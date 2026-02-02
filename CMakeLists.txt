@@ -16,7 +16,7 @@ include(cmake/get_cpm.cmake)
 # set flag to compile only the chessvalidator
 option(CHESS_VALIDATOR_ONLY "Compile only the chess validator" OFF)
 
-CPMAddPackage("gh:TheLartians/Format.cmake@1.8.1")
+CPMAddPackage("gh:TheLartians/Format.cmake@1.8.3")
 
 # add external chess lib to use as a validator for the tools
 CPMAddPackage(
@@ -49,7 +49,7 @@ IF(NOT CHESS_VALIDATOR_ONLY)
     CPMAddPackage(
             NAME SDL2
             GITHUB_REPOSITORY libsdl-org/SDL
-            GIT_TAG release-2.26.2
+            GIT_TAG release-2.32.10
             OPTIONS "SDL2_DISABLE_INSTALL ON"
             "SDL_WERROR OFF"
             "SDL_TEST OFF"
@@ -77,7 +77,7 @@ IF(NOT CHESS_VALIDATOR_ONLY)
     include_directories(${SDL2_INCLUDE_DIR})
 
     CPMAddPackage(GITHUB_REPOSITORY libsdl-org/SDL_image
-            GIT_TAG release-2.6.2
+            GIT_TAG release-2.8.8
             OPTIONS
             "SDL2IMAGE_INSTALL OFF"
             "SDL2IMAGE_SAMPLES OFF"
@@ -90,7 +90,7 @@ IF(NOT CHESS_VALIDATOR_ONLY)
     # add imgui
     CPMAddPackage(
             NAME IMGUI
-            URL "https://github.com/ocornut/imgui/archive/refs/tags/v1.89.2.zip"
+            URL "https://github.com/ocornut/imgui/archive/refs/tags/v1.92.5.zip"
     )
     IF(IMGUI_ADDED)
         add_library(IMGUI STATIC)
@@ -104,8 +104,8 @@ IF(NOT CHESS_VALIDATOR_ONLY)
                 ${IMGUI_SOURCE_DIR}/imgui.cpp
 
                 PRIVATE
-                ${IMGUI_SOURCE_DIR}/backends/imgui_impl_sdlrenderer.cpp
-                ${IMGUI_SOURCE_DIR}/backends/imgui_impl_sdl.cpp
+                ${IMGUI_SOURCE_DIR}/backends/imgui_impl_sdlrenderer2.cpp
+                ${IMGUI_SOURCE_DIR}/backends/imgui_impl_sdl2.cpp
                 ${IMGUI_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
         )
         target_include_directories( IMGUI
