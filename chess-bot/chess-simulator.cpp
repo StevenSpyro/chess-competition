@@ -2,7 +2,9 @@
 // disservin's lib. drop a star on his hard work!
 // https://github.com/Disservin/chess-library
 #include "chess.hpp"
+#include "Minimax.h"
 #include <random>
+
 using namespace ChessSimulator;
 
 std::string ChessSimulator::Move(std::string fen) {
@@ -20,10 +22,30 @@ std::string ChessSimulator::Move(std::string fen) {
   if(moves.size() == 0)
     return "";
 
+  chess::Move bestMoveGlobal = moves[0];
+  int maxDepth = 4;
+
+  int bestScore = -1000000;
+  for (auto& move : moves) {
+    board.makeMove(move);
+    int score = -ChessSimulator::minimax(board, maxDepth - 1, -1000000, 1000000);
+    board.unmakeMove(move);
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestMoveGlobal = move;
+    }
+  }
+
+  return chess::uci::moveToUci(bestMoveGlobal);
+
+  /*
   // get random move
   std::random_device rd;
   std::mt19937 gen(rd());
   std::uniform_int_distribution<> dist(0, moves.size() - 1);
   auto move = moves[dist(gen)];
   return chess::uci::moveToUci(move);
+
+  */
 }
