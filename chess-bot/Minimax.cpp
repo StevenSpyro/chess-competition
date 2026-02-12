@@ -65,6 +65,17 @@ namespace ChessSimulator {
         -20,-10,-10, -5, -5,-10,-10,-20
     };
 
+    const int king_pst[64] = {
+        -30,-40,-40,-50,-50,-40,-40,-30,
+        -30,-40,-40,-50,-50,-40,-40,-30,
+        -30,-40,-40,-50,-50,-40,-40,-30,
+        -30,-40,-40,-50,-50,-40,-40,-30,
+        -20,-30,-30,-40,-40,-30,-30,-20,
+        -10,-20,-20,-20,-20,-20,-20,-10,
+         20, 20,  0,  0,  0,  0, 20, 20,
+         20, 30, 10,  0,  0, 10, 30, 20
+    };
+
     // Values Pawn = 100 , Knight = 300, Bishop = 320, Rook 500, Queen 900
     int evaluate(chess::Board& board) {
         int score = 0;
@@ -78,10 +89,11 @@ namespace ChessSimulator {
                 Square sq = bb.pop();
 
                 if (pt == PieceType::PAWN) pScore += 100;
-                else if (pt == PieceType::KNIGHT) pScore += 300;
-                else if (pt == PieceType::BISHOP) pScore += 320;
+                else if (pt == PieceType::KNIGHT) pScore += 320;
+                else if (pt == PieceType::BISHOP) pScore += 330;
                 else if (pt == PieceType::ROOK) pScore += 500;
                 else if (pt == PieceType::QUEEN) pScore += 900;
+                else if (pt == PieceType::KING) pScore += 20000;
 
                 int sqIdx = sq.index();
                 int pstidx = (color == Color::WHITE) ? sqIdx : sqIdx ^ 56; // Flip
@@ -97,6 +109,7 @@ namespace ChessSimulator {
         whiteEval += evalPiece(PieceType::BISHOP, Color::WHITE, bishop_pst);
         whiteEval += evalPiece(PieceType::ROOK, Color::WHITE, rook_pst);
         whiteEval += evalPiece(PieceType::QUEEN, Color::WHITE, queen_pst);
+        whiteEval += evalPiece(PieceType::KING, Color::WHITE, king_pst);
 
         int blackEval = 0;
         blackEval += evalPiece(PieceType::PAWN, Color::BLACK, pawn_pst);
@@ -104,9 +117,19 @@ namespace ChessSimulator {
         blackEval += evalPiece(PieceType::BISHOP, Color::BLACK, bishop_pst);
         blackEval += evalPiece(PieceType::ROOK, Color::BLACK, rook_pst);
         blackEval += evalPiece(PieceType::QUEEN, Color::BLACK, queen_pst);
+        blackEval += evalPiece(PieceType::KING, Color::BLACK, king_pst);
+
+        chess::Movelist moves;
+        chess::movegen::legalmoves(moves, board);
+
+        int mobilityScore = moves.size() * 10;
+        int finalScore = (whiteEval - blackEval);
+
+        if (board.sideToMove() == Color::WHITE) finalScore += mobilityScore;
+        else finalScore -= mobilityScore;
 
         int perspective = (board.sideToMove() == Color::WHITE) ? 1 : -1;
-        return (whiteEval - blackEval) * perspective;
+        return finalScore * perspective;
     }
 
     int minimax(chess::Board& board, int depth, int alpha, int beta) {

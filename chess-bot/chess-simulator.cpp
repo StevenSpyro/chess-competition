@@ -1,6 +1,8 @@
 #include "chess-simulator.h"
 // disservin's lib. drop a star on his hard work!
 // https://github.com/Disservin/chess-library
+#include <chrono>
+
 #include "chess.hpp"
 #include "Minimax.h"
 #include <random>
@@ -23,18 +25,31 @@ std::string ChessSimulator::Move(std::string fen) {
     return "";
 
   chess::Move bestMoveGlobal = moves[0];
-  int maxDepth = 4;
+  auto startTime = std::chrono::steady_clock::now();
 
-  int bestScore = -1000000;
-  for (auto& move : moves) {
-    board.makeMove(move);
-    int score = -ChessSimulator::minimax(board, maxDepth - 1, -1000000, 1000000);
-    board.unmakeMove(move);
+  // Depth search
+  for (int depth = 1; depth <= 20; depth++) {
+    int bestScore = -1000000;
+    chess::Move currentBestMove = moves[0];
 
-    if (score > bestScore) {
-      bestScore = score;
-      bestMoveGlobal = move;
+    for (auto& move : moves) {
+      board.makeMove(move);
+      int score = -ChessSimulator::minimax(board, depth - 1, -1000000, 1000000);
+      board.unmakeMove(move);
+
+      if (score > bestScore) {
+        bestScore = score;
+        currentBestMove = move;
+      }
+
+      // Ensure it returns before 10 seconds
+      auto now = std::chrono::steady_clock::now();
+      if (std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count() >= 100) {
+        return chess::uci::moveToUci(bestMoveGlobal);
+      }
     }
+
+    bestMoveGlobal = currentBestMove;
   }
 
   return chess::uci::moveToUci(bestMoveGlobal);
