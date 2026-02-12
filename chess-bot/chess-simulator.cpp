@@ -42,7 +42,7 @@ std::string ChessSimulator::Move(std::string fen) {
         currentBestMove = move;
       }
 
-      // Ensure it returns before 10 seconds
+      // Ensure it returns before 5 seconds
       auto now = std::chrono::steady_clock::now();
       if (std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count() >= 100) {
         return chess::uci::moveToUci(bestMoveGlobal);
