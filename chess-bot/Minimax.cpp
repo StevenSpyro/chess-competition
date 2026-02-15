@@ -76,7 +76,7 @@ namespace ChessSimulator {
          20, 30, 10,  0,  0, 10, 30, 20
     };
 
-    // Values Pawn = 100 , Knight = 300, Bishop = 320, Rook 500, Queen 900
+    // Values Pawn = 100 , Knight = 300, Bishop = 320, Rook 500, Queen 900, King 20000
     int evaluate(chess::Board& board) {
         int score = 0;
 
