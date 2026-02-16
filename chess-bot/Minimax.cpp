@@ -93,7 +93,7 @@ namespace ChessSimulator {
                 else if (pt == PieceType::BISHOP) pScore += 330;
                 else if (pt == PieceType::ROOK) pScore += 500;
                 else if (pt == PieceType::QUEEN) pScore += 900;
-                else if (pt == PieceType::KING) pScore += 20000;
+                else if (pt == PieceType::KING) pScore += 99999;
 
                 int sqIdx = sq.index();
                 int pstidx = (color == Color::WHITE) ? sqIdx : sqIdx ^ 56; // Flip
