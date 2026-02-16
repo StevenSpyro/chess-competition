@@ -9,7 +9,7 @@
 
 using namespace ChessSimulator;
 
-std::string ChessSimulator::Move(std::string fen) {
+std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
   // create your board based on the board string following the FEN notation
   // search for the best move using minimax / monte carlo tree search /
   // alpha-beta pruning / ... try to use nice heuristics to speed up the search
