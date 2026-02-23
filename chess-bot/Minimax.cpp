@@ -1,13 +1,12 @@
 #include "chess.hpp"
 #include "Minimax.h"
 #include <algorithm>
+#include <limits>
 #include "chess-simulator.h"
 
 using namespace chess;
 
 namespace ChessSimulator {
-
-    const int INFINITY = 100000;
 
     // Square Table for better Center attention
     const int pawn_pst[64] = {
@@ -139,11 +138,11 @@ namespace ChessSimulator {
         chess::movegen::legalmoves(moves, board);
 
         if (moves.size() == 0) {
-            if (board.inCheck()) return -INFINITY + (10 - depth); // Game ends in Checkmate
+            if (board.inCheck()) return -std::numeric_limits<int>::max() + (10 - depth); // Game ends in Checkmate
             return 0; // Game ends in Stalemate
         }
 
-        int bestScore = -INFINITY;
+        int bestScore = std::numeric_limits<int>::min();
 
         // Makes pruning faster
         std::sort(moves.begin(), moves.end(), [&](const chess::Move& a, const chess::Move& b) {
