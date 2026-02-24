@@ -157,7 +157,9 @@ endif() # NOT CHESS_VALIDATOR_ONLY AND NOT CHESS_COMPETITION
 file(GLOB_RECURSE CHESS_BOT_FILES CONFIGURE_DEPENDS "chess-bot/*.cpp" "chess-bot/*.h")
 add_library(chessbot STATIC ${CHESS_BOT_FILES}
         chess-bot/Minimax.h
-        chess-bot/Minimax.cpp)
+        chess-bot/Minimax.cpp
+        chess-bot/MCTS.cpp
+        chess-bot/MCTS.h)
 set_target_properties(chessbot PROPERTIES LINKER_LANGUAGE CXX)
 include_directories(chess-bot)
 

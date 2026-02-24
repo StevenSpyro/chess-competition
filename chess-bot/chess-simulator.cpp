@@ -5,6 +5,7 @@
 
 #include "chess.hpp"
 #include "Minimax.h"
+#include "MCTS.h"
 #include <random>
 
 using namespace ChessSimulator;
@@ -24,6 +25,40 @@ std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
   if(moves.size() == 0)
     return "";
 
+  // Make the game use MCTS and then the Minimax
+  if (board.sideToMove() == chess::Color::WHITE) {
+    return getBestMoveMCTS(fen, timeLimitMs);
+  } else {
+    chess::Move bestMoveGlobal = moves[0];
+    auto startTime = std::chrono::steady_clock::now();
+
+    // Depth Search aka iterative
+    for (int depth = 1; depth <= 20; depth++) {
+      int bestScore = -1000000;
+      chess::Move currentBestMove = moves[0];
+
+      for (auto& move : moves) {
+        board.makeMove(move);
+        int score = -ChessSimulator::minimax(board, depth - 1, -1000000, 1000000);
+        board.unmakeMove(move);
+
+        if (score > bestScore) {
+          bestScore = score;
+          currentBestMove = move;
+        }
+
+        // Return time
+        auto now = std::chrono::steady_clock::now();
+        if (std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count() >= 100) {
+          return chess::uci::moveToUci(bestMoveGlobal);
+        }
+      }
+      bestMoveGlobal = currentBestMove;
+    }
+    return chess::uci::moveToUci(bestMoveGlobal);
+  }
+}
+/*
   chess::Move bestMoveGlobal = moves[0];
   auto startTime = std::chrono::steady_clock::now();
 
@@ -53,7 +88,7 @@ std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
   }
 
   return chess::uci::moveToUci(bestMoveGlobal);
-
+*/
   /*
   // get random move
   std::random_device rd;
@@ -63,4 +98,4 @@ std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
   return chess::uci::moveToUci(move);
 
   */
-}
+//}
