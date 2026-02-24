@@ -3,6 +3,7 @@
 //
 
 #include "MCTS.h"
+#include "Minimax.h"
 #include <chrono>
 #include <random>
 #include <limits>
@@ -38,24 +39,43 @@ namespace ChessSimulator {
         static std::random_device rd;
         static std::mt19937 gen(rd());
 
+        int depth = 0;
+        int max_rollout_depth = 15;
+
         while (true) {
             chess::Movelist moves;
             chess::movegen::legalmoves(moves, board);
 
-            //End Term. :{)
+            // 1. The game ends in stalemate or a checkmate
             if (moves.empty()) {
                 if (board.inCheck()) {
-                    // Check if the player is in check and or lost.
                     return (board.sideToMove() == start_turn) ? 0.0 : 1.0;
                 }
-                return 0.5; // They staled
+                return 0.5; // Staled
             }
 
-            // Rule 50
-            if (board.halfMoveClock() >= 100) return 0.5;
+            // Make sure that this stops and evaluates because without it the AI is NOT good.
+            if (depth >= max_rollout_depth || board.halfMoveClock() >= 100) {
 
+                int score = ChessSimulator::evaluate(board);
+
+                if (score == 0) return 0.5; // Dead even
+
+                // Checks to see who is winning
+                bool start_turn_is_winning;
+                if (board.sideToMove() == start_turn) {
+                    start_turn_is_winning = (score > 0);
+                } else {
+                    start_turn_is_winning = (score < 0);
+                }
+
+                return start_turn_is_winning ? 1.0 : 0.0;
+            }
+
+            // Go random
             std::uniform_int_distribution<> dist(0, moves.size() - 1);
             board.makeMove(moves[dist(gen)]);
+            depth++;
         }
     }
 
