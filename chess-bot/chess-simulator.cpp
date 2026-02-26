@@ -20,6 +20,11 @@ std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
 
   // here goes a random movement
   chess::Board board(fen);
+
+  // Need to implement this so that there is a key to access. board.hash()
+
+  // Implement this so it is faster and better. std::unordered_map<uint64_t, int> evalcache
+
   chess::Movelist moves;
   chess::movegen::legalmoves(moves, board);
   if(moves.size() == 0)
