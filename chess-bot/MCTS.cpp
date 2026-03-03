@@ -34,7 +34,7 @@ namespace ChessSimulator {
     bool MCTSNode::isTerminal() {
         chess::Movelist moves;
         chess::movegen::legalmoves(moves, state);
-        return moves.empty() || state.halfMoveClock() >= 100;
+        return moves.empty() || state.halfMoveClock() >= 5000;
     }
 
     double rollout(chess::Board board) {
@@ -64,17 +64,15 @@ namespace ChessSimulator {
 
                 int score = ChessSimulator::evaluate(board);
 
-                if (score == 0) return 0.5; // Dead even
-
                 // Checks to see who is winning
-                bool start_turn_is_winning;
-                if (board.sideToMove() == start_turn) {
-                    start_turn_is_winning = (score > 0);
-                } else {
-                    start_turn_is_winning = (score < 0);
+                int relative_score = score;
+                if (board.sideToMove() != start_turn) {
+                    relative_score = -score;
                 }
 
-                return start_turn_is_winning ? 1.0 : 0.0;
+                double win_probability = 1.0 / (1.0 + std::pow(10.0, -relative_score / 400.0));
+
+                return win_probability;
             }
 
             // Have a greater preference for captures
@@ -167,7 +165,7 @@ namespace ChessSimulator {
         auto startTime = std::chrono::steady_clock::now();
 
         // Timer just like the Minimax
-        int budget = timeLimitMs > 0 ? timeLimitMs : 1000;
+        int budget = timeLimitMs > 0 ? timeLimitMs : 10000;
         int buffer = 50; // Buffer time
 
         if (budget <= buffer) {
@@ -175,7 +173,7 @@ namespace ChessSimulator {
         }
 
         int iterations = 0;
-        int max_iterations = 10000;
+        int max_iterations = 100000;
 
         while (iterations < max_iterations) {
 
