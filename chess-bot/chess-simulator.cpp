@@ -23,7 +23,7 @@ std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
   // extra points if you create your own board/move representation instead of
   // using the one provided by the library
 
-  /*
+
   if (fen == "startpos") {
     fen = chess::constants::STARTPOS;
   }
@@ -31,7 +31,6 @@ std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
   if (evalcache.size() > 1000000) {
     evalcache.clear();
   }
-  */
 
   // Here goes a random movement
   chess::Board board(fen);
@@ -45,9 +44,7 @@ std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
   if(moves.size() == 0)
     return "";
 
-  return getBestMoveMCTS(fen, timeLimitMs);
-
-  /*
+  //return getBestMoveMCTS(fen, timeLimitMs);
 
   // Make the game use MCTS and then the Minimax
   if (board.sideToMove() == chess::Color::WHITE) {
@@ -81,7 +78,6 @@ std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
     }
     return chess::uci::moveToUci(bestMoveGlobal);
   }
-  */
 }
 
 
