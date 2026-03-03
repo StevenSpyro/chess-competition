@@ -2,6 +2,7 @@
 #include "Minimax.h"
 #include <algorithm>
 #include <limits>
+#include <unordered_map>
 #include "chess-simulator.h"
 
 using namespace chess;
@@ -75,8 +76,19 @@ namespace ChessSimulator {
          20, 30, 10,  0,  0, 10, 30, 20
     };
 
+    std::unordered_map<uint64_t, int> evalcache;
+
     // Values Pawn = 100 , Knight = 300, Bishop = 320, Rook 500, Queen 900, King 20000
     int evaluate(chess::Board& board) {
+        // Hash key
+        uint64_t hashKey = board.hash();
+
+        // Check if pos has been eval
+        auto it = evalcache.find(hashKey);
+        if (it != evalcache.end()) {
+            return it -> second;
+        }
+
         int score = 0;
 
         // Assign Values
@@ -128,7 +140,11 @@ namespace ChessSimulator {
         else finalScore -= mobilityScore;
 
         int perspective = (board.sideToMove() == Color::WHITE) ? 1 : -1;
-        return finalScore * perspective;
+        int final_eval = finalScore * perspective;
+
+        evalcache[hashKey] = final_eval;
+
+        return final_eval;
     }
 
     int minimax(chess::Board& board, int depth, int alpha, int beta) {

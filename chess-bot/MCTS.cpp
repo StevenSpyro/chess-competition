@@ -10,6 +10,9 @@
 
 namespace ChessSimulator {
 
+    // Pointer to hold the root
+    static MCTSNode* global_mcts_root = nullptr;
+
     MCTSNode::MCTSNode(chess::Board s, MCTSNode* p, chess::Move m)
         : state(s), parent(p), move_from_parent(m), wins(0.0), visits(0) {}
 
@@ -72,10 +75,36 @@ namespace ChessSimulator {
                 return start_turn_is_winning ? 1.0 : 0.0;
             }
 
-            // Go random
-            std::uniform_int_distribution<> dist(0, moves.size() - 1);
-            board.makeMove(moves[dist(gen)]);
+            // Have a greater preference for captures
+            std::vector<chess::Move> capture_moves;
+            std::vector<chess::Move> quiet_moves;
+
+            for (auto move : moves) {
+                if (board.isCapture(move)) {
+                    capture_moves.push_back(move);
+                } else {
+                    quiet_moves.push_back(move);
+                }
+            }
+
+            // Capture piece if you can
+            if (!capture_moves.empty()) {
+                std::uniform_int_distribution<> dist(0, capture_moves.size() - 1);
+                board.makeMove(capture_moves[dist(gen)]);
+            }
+
+            // Play a random move
+            else {
+                std::uniform_int_distribution<> dist(0, quiet_moves.size() - 1);
+                board.makeMove(quiet_moves[dist(gen)]);
+            }
+
             depth++;
+
+            // Go random
+            //std::uniform_int_distribution<> dist(0, moves.size() - 1);
+            //board.makeMove(moves[dist(gen)]);
+            //depth++;
         }
     }
 
@@ -97,7 +126,42 @@ namespace ChessSimulator {
 
         if (root_moves.empty()) return "";
 
-        MCTSNode* root = new MCTSNode(board, nullptr, chess::Move::NULL_MOVE);
+        // Tree Reuse
+        if (global_mcts_root == nullptr) {
+            global_mcts_root = new MCTSNode(board, nullptr, chess::Move::NULL_MOVE);
+        } else {
+            // Get current board state in tree
+            MCTSNode* matching_child = nullptr;
+            for (auto child : global_mcts_root->children) {
+                // Compare with the current Zobrist hash
+                if (child -> state.hash() == board.hash()) {
+                    matching_child = child;
+                    break;
+                }
+            }
+
+            if (matching_child) {
+                // Take the opponents move into the system so it can't be deleted
+                for (auto& child : global_mcts_root->children) {
+                    if (child != matching_child) {
+                        delete child;
+                    }
+                }
+
+                global_mcts_root -> children.clear();
+                delete global_mcts_root;
+
+                global_mcts_root = matching_child;
+                global_mcts_root -> parent = nullptr;
+            } else {
+                // Start over
+                delete global_mcts_root;
+                global_mcts_root = new MCTSNode(board, nullptr, chess::Move::NULL_MOVE);
+            }
+        }
+
+        MCTSNode* root = global_mcts_root;
+        //MCTSNode* root = new MCTSNode(board, nullptr, chess::Move::NULL_MOVE);
         auto startTime = std::chrono::steady_clock::now();
 
         // Timer just like the Minimax
@@ -171,7 +235,7 @@ namespace ChessSimulator {
             std::cout << "Expected Win Rate: " << win_rate << "%" << std::endl;
         }
 
-        delete root;
+        //delete root;
         return chess::uci::moveToUci(best_move);
     }
 

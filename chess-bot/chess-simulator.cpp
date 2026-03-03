@@ -7,8 +7,13 @@
 #include "Minimax.h"
 #include "MCTS.h"
 #include <random>
+#include <unordered_map>
 
 using namespace ChessSimulator;
+
+namespace ChessSimulator {
+  extern std::unordered_map<uint64_t, int> evalcache;
+}
 
 std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
   // create your board based on the board string following the FEN notation
@@ -17,6 +22,10 @@ std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
   // and have better results return the best move in UCI notation you will gain
   // extra points if you create your own board/move representation instead of
   // using the one provided by the library
+
+  if (evalcache.size() > 1000000) {
+    evalcache.clear();
+  }
 
   // here goes a random movement
   chess::Board board(fen);
@@ -29,6 +38,10 @@ std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
   chess::movegen::legalmoves(moves, board);
   if(moves.size() == 0)
     return "";
+
+  return getBestMoveMCTS(fen, timeLimitMs);
+
+  /*
 
   // Make the game use MCTS and then the Minimax
   if (board.sideToMove() == chess::Color::WHITE) {
@@ -62,7 +75,11 @@ std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
     }
     return chess::uci::moveToUci(bestMoveGlobal);
   }
+  */
 }
+
+
+
 /*
   chess::Move bestMoveGlobal = moves[0];
   auto startTime = std::chrono::steady_clock::now();
