@@ -76,7 +76,7 @@ namespace ChessSimulator {
          20, 30, 10,  0,  0, 10, 30, 20
     };
 
-    std::unordered_map<uint64_t, int> evalcache;
+    thread_local std::unordered_map<uint64_t, int> evalcache;
 
     // Values Pawn = 100 , Knight = 300, Bishop = 320, Rook 500, Queen 900, King 20000
     int evaluate(chess::Board& board) {

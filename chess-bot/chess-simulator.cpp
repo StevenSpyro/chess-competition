@@ -12,7 +12,7 @@
 using namespace ChessSimulator;
 
 namespace ChessSimulator {
-  extern std::unordered_map<uint64_t, int> evalcache;
+  extern thread_local std::unordered_map<uint64_t, int> evalcache;
 }
 
 std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
@@ -23,16 +23,7 @@ std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
   // extra points if you create your own board/move representation instead of
   // using the one provided by the library
 
-  if (!fen.empty()) {
-    fen.erase(0, fen.find_first_not_of(" \n\r\t"));
-    fen.erase(fen.find_last_not_of(" \n\r\t") + 1);
-  }
-
-  if (fen.find("startpos") != std::string::npos) {
-    fen = chess::constants::STARTPOS;
-  } else if (fen.find("position fen ") == 0) {
-    fen = fen.substr(13);
-  }
+  chess::Board board(fen);
 
   if (evalcache.size() > 1000000) {
     evalcache.clear();
@@ -42,7 +33,6 @@ std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
 
   // Implement this so it is faster and better. std::unordered_map<uint64_t, int> evalcache
 
-  chess::Board board(fen);
   chess::Movelist moves;
   chess::movegen::legalmoves(moves, board);
 
