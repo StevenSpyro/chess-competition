@@ -19,8 +19,9 @@ namespace ChessSimulator {
         int visits;
         chess::Board state;
         chess::Move move_from_parent;
+        uint64_t hash;
 
-        MCTSNode(chess::Board s, MCTSNode* p, chess::Move m);
+        MCTSNode(MCTSNode* p, chess::Move m, uint64_t h);
         ~MCTSNode();
 
         double ucb(double C = std::sqrt(2.0));

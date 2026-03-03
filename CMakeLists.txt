@@ -228,3 +228,7 @@ if(NOT CHESS_COMPETITION)
     )
     write_license_disclaimer("third_party.txt" "${CPM_PACKAGES}")
 endif()
+
+if(EMSCRIPTEN)
+    target_link_options(chess-bot PRIVATE -sALLOW_MEMORY_GROWTH=1)
+endif()

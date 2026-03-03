@@ -13,8 +13,8 @@ namespace ChessSimulator {
     // Pointer to hold the root
     static MCTSNode* global_mcts_root = nullptr;
 
-    MCTSNode::MCTSNode(chess::Board s, MCTSNode* p, chess::Move m)
-        : state(s), parent(p), move_from_parent(m), wins(0.0), visits(0) {}
+    MCTSNode::MCTSNode(MCTSNode* p, chess::Move m, uint64_t h)
+        : parent(p), move_from_parent(m), hash(h), wins(0.0), visits(0) {}
 
     MCTSNode::~MCTSNode() {
         for (auto child : children) {
@@ -41,11 +41,8 @@ namespace ChessSimulator {
         chess::Color start_turn = board.sideToMove();
         static std::mt19937 gen(std::chrono::system_clock::now().time_since_epoch().count());
 
-        //thread_local std::random_device rd;
-        //thread_local std::mt19937 gen(rd());
-
         int depth = 0;
-        int max_rollout_depth = 15;
+        int max_rollout_depth = 30;
 
         while (true) {
             chess::Movelist moves;
@@ -126,9 +123,21 @@ namespace ChessSimulator {
 
         if (root_moves.empty()) return "";
 
+        for (auto move : root_moves) {
+            board.makeMove(move);
+            chess::Movelist responses;
+            chess::movegen::legalmoves(responses, board);
+            bool is_mate = responses.empty() && board.inCheck();
+            board.unmakeMove(move);
+
+            if (is_mate) {
+                return chess::uci::moveToUci(move);
+            }
+        }
+
         // Tree Reuse
         if (global_mcts_root == nullptr) {
-            global_mcts_root = new MCTSNode(board, nullptr, chess::Move::NULL_MOVE);
+            global_mcts_root = new MCTSNode(nullptr, chess::Move::NULL_MOVE, board.hash());
         } else {
             // Get current board state in tree
             MCTSNode* matching_child = nullptr;
@@ -156,7 +165,7 @@ namespace ChessSimulator {
             } else {
                 // Start over
                 delete global_mcts_root;
-                global_mcts_root = new MCTSNode(board, nullptr, chess::Move::NULL_MOVE);
+                global_mcts_root = new MCTSNode(nullptr, chess::Move::NULL_MOVE, board.hash());
             }
         }
 
@@ -173,7 +182,7 @@ namespace ChessSimulator {
         }
 
         int iterations = 0;
-        int max_iterations = 30000;
+        int max_iterations = 100000;
 
         while (iterations < max_iterations) {
 
@@ -187,6 +196,7 @@ namespace ChessSimulator {
 
             // Select
             MCTSNode* current = root;
+            chess::Board current_board = board;
 
             // New format to hopefully encourage making the bot want to kill
             double exploration_constant = 0.5;
@@ -242,7 +252,7 @@ namespace ChessSimulator {
                     for (auto move : moves) {
                         chess::Board child_board = current -> state;
                         child_board.makeMove(move);
-                        current->children.push_back(new MCTSNode(child_board, current, move));
+                        current->children.push_back(new MCTSNode(current, move, current_board.hash()));
                     }
 
                     current = current -> children[0];
@@ -250,7 +260,7 @@ namespace ChessSimulator {
             }
 
             // Sim
-            double result = rollout(current -> state);
+            double result = rollout(current_board);
 
             // Backprop
             backpropagate(current, 1.0 - result);
