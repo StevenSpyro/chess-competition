@@ -12,7 +12,7 @@
 using namespace ChessSimulator;
 
 namespace ChessSimulator {
-  extern thread_local std::unordered_map<uint64_t, int> evalcache;
+  extern std::unordered_map<uint64_t, int> evalcache;
 }
 
 std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
@@ -23,23 +23,21 @@ std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
   // extra points if you create your own board/move representation instead of
   // using the one provided by the library
 
-  chess::Board board(fen);
-
   if (evalcache.size() > 1000000) {
     evalcache.clear();
   }
 
-  // Need to implement this so that there is a key to access. board.hash()
-
-  // Implement this so it is faster and better. std::unordered_map<uint64_t, int> evalcache
-
+  chess::Board board(fen);
   chess::Movelist moves;
   chess::movegen::legalmoves(moves, board);
 
-  if(moves.size() == 0)
+  if(moves.size() == 0) {
     return "";
+  }
 
-  //return getBestMoveMCTS(fen, timeLimitMs);
+  return getBestMoveMCTS(fen, timeLimitMs);
+
+  /*
 
   // Make the game use MCTS and then the Minimax
   if (board.sideToMove() == chess::Color::WHITE) {
@@ -73,6 +71,7 @@ std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
     }
     return chess::uci::moveToUci(bestMoveGlobal);
   }
+  */
 }
 
 

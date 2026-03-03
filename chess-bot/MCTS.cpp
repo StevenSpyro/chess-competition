@@ -11,7 +11,7 @@
 namespace ChessSimulator {
 
     // Pointer to hold the root
-    thread_local MCTSNode* global_mcts_root = nullptr;
+    static MCTSNode* global_mcts_root = nullptr;
 
     MCTSNode::MCTSNode(chess::Board s, MCTSNode* p, chess::Move m)
         : state(s), parent(p), move_from_parent(m), wins(0.0), visits(0) {}
@@ -39,8 +39,10 @@ namespace ChessSimulator {
 
     double rollout(chess::Board board) {
         chess::Color start_turn = board.sideToMove();
-        thread_local std::random_device rd;
-        thread_local std::mt19937 gen(rd());
+        static std::mt19937 gen(std::chrono::system_clock::now().time_since_epoch().count());
+
+        //thread_local std::random_device rd;
+        //thread_local std::mt19937 gen(rd());
 
         int depth = 0;
         int max_rollout_depth = 15;
