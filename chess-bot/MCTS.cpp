@@ -82,7 +82,7 @@ namespace ChessSimulator {
             std::vector<chess::Move> quiet_moves;
 
             for (auto move : moves) {
-                if (board.isCapture(move)) {
+                if (board.isCapture(move) || move.promotionType() != chess::PieceType::NONE) { // Encourage promo
                     capture_moves.push_back(move);
                 } else {
                     quiet_moves.push_back(move);
@@ -212,6 +212,12 @@ namespace ChessSimulator {
                 if (current -> visits > 0 || current == root) {
                     chess::Movelist moves;
                     chess::movegen::legalmoves(moves, current->state);
+
+                    // Explore
+                    std::sort(moves.begin(), moves.end(), [&](const chess::Move& a, const chess::Move& b) {
+                        return current->state.isCapture(a) > current->state.isCapture(b);
+                    });
+
                     for (auto move : moves) {
                         chess::Board child_board = current -> state;
                         child_board.makeMove(move);
@@ -256,7 +262,7 @@ namespace ChessSimulator {
             global_mcts_root->parent = nullptr;
         }
 
-        /*
+
         std::cout << "Total Iterations: " << root->visits << std::endl;
         if (best_child) {
             double win_rate = (best_child->wins / best_child->visits) * 100.0;
@@ -264,7 +270,7 @@ namespace ChessSimulator {
             std::cout << "Node Visits: " << best_child->visits << std::endl;
             std::cout << "Expected Win Rate: " << win_rate << "%" << std::endl;
         }
-        */
+
         //delete root;
         return chess::uci::moveToUci(best_move);
     }

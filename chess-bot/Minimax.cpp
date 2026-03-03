@@ -76,6 +76,18 @@ namespace ChessSimulator {
          20, 30, 10,  0,  0, 10, 30, 20
     };
 
+    // Good for making better moves in the end
+    const int king_endgame_pst[64] = {
+        -50,-40,-30,-20,-20,-30,-40,-50,
+        -30,-20,-10,  0,  0,-10,-20,-30,
+        -30,-10, 20, 30, 30, 20,-10,-30,
+        -30,-10, 30, 40, 40, 30,-10,-30,
+        -30,-10, 30, 40, 40, 30,-10,-30,
+        -30,-10, 20, 30, 30, 20,-10,-30,
+        -30,-30,  0,  0,  0,  0,-30,-30,
+        -50,-30,-30,-30,-30,-30,-30,-50
+    };
+
     std::unordered_map<uint64_t, int> evalcache;
 
     // Values Pawn = 100 , Knight = 300, Bishop = 320, Rook 500, Queen 900, King 20000
@@ -114,13 +126,17 @@ namespace ChessSimulator {
             return pScore;
         };
 
+        // Make the king more active when there are less pieces
+        bool isEndgame = board.occ().count() <= 12;
+        const int* active_king_pst = isEndgame ? king_endgame_pst : king_pst;
+
         int whiteEval = 0;
         whiteEval += evalPiece(PieceType::PAWN, Color::WHITE, pawn_pst);
         whiteEval += evalPiece(PieceType::KNIGHT, Color::WHITE, knight_pst);
         whiteEval += evalPiece(PieceType::BISHOP, Color::WHITE, bishop_pst);
         whiteEval += evalPiece(PieceType::ROOK, Color::WHITE, rook_pst);
         whiteEval += evalPiece(PieceType::QUEEN, Color::WHITE, queen_pst);
-        whiteEval += evalPiece(PieceType::KING, Color::WHITE, king_pst);
+        whiteEval += evalPiece(PieceType::KING, Color::WHITE, active_king_pst);
 
         int blackEval = 0;
         blackEval += evalPiece(PieceType::PAWN, Color::BLACK, pawn_pst);
@@ -128,7 +144,7 @@ namespace ChessSimulator {
         blackEval += evalPiece(PieceType::BISHOP, Color::BLACK, bishop_pst);
         blackEval += evalPiece(PieceType::ROOK, Color::BLACK, rook_pst);
         blackEval += evalPiece(PieceType::QUEEN, Color::BLACK, queen_pst);
-        blackEval += evalPiece(PieceType::KING, Color::BLACK, king_pst);
+        blackEval += evalPiece(PieceType::KING, Color::BLACK, active_king_pst);
 
         chess::Movelist moves;
         chess::movegen::legalmoves(moves, board);
