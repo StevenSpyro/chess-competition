@@ -227,13 +227,13 @@ namespace ChessSimulator {
 
         chess::Move best_move = best_child ? best_child->move_from_parent : root_moves[0];
 
-        std::cout << "Total Iterations: " << root->visits << std::endl;
-        if (best_child) {
-            double win_rate = (best_child->wins / best_child->visits) * 100.0;
-            std::cout << "Best Move: " << chess::uci::moveToUci(best_move) << std::endl;
-            std::cout << "Node Visits: " << best_child->visits << std::endl;
-            std::cout << "Expected Win Rate: " << win_rate << "%" << std::endl;
-        }
+        //std::cout << "Total Iterations: " << root->visits << std::endl;
+        //if (best_child) {
+        //    double win_rate = (best_child->wins / best_child->visits) * 100.0;
+        //    std::cout << "Best Move: " << chess::uci::moveToUci(best_move) << std::endl;
+        //    std::cout << "Node Visits: " << best_child->visits << std::endl;
+        //    std::cout << "Expected Win Rate: " << win_rate << "%" << std::endl;
+        //}
 
         //delete root;
         return chess::uci::moveToUci(best_move);
