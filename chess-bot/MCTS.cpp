@@ -69,9 +69,11 @@ namespace ChessSimulator {
                     relative_score = -score;
                 }
 
-                double win_probability = 1.0 / (1.0 + std::pow(10.0, -relative_score / 400.0));
+                return 1.0 / (1.0 + std::pow(10.0, -relative_score / 400.0));
 
-                return win_probability;
+                //double win_probability = 1.0 / (1.0 + std::pow(10.0, -relative_score / 400.0));
+
+                // win_probability;
             }
 
             // Have a greater preference for captures
@@ -145,7 +147,7 @@ namespace ChessSimulator {
             MCTSNode* matching_child = nullptr;
             for (auto child : global_mcts_root->children) {
                 // Compare with the current Zobrist hash
-                if (child -> state.hash() == board.hash()) {
+                if (child -> hash == board.hash()) {
                     matching_child = child;
                     break;
                 }
@@ -185,6 +187,7 @@ namespace ChessSimulator {
 
         int iterations = 0;
         int max_iterations = 100000;
+        double exploration_constant = 0.5;
 
         while (iterations < max_iterations) {
 
@@ -196,18 +199,22 @@ namespace ChessSimulator {
             }
             iterations++;
 
-            // Select
             MCTSNode* current = root;
             chess::Board current_board = board;
 
-            // New format to hopefully encourage making the bot want to kill
-            double exploration_constant = 0.5;
+            // Select
+            while (!current->isLeaf()) {
+                chess::Movelist legal_moves;
+                chess::movegen::legalmoves(legal_moves, current_board);
 
-            while (!current -> isLeaf()) {
+                if (legal_moves.empty() || current_board.halfMoveClock() >= 100) {
+                    break; // Terminal state reached safely
+                }
+
                 MCTSNode* best_child = nullptr;
                 double best_ucb = -1.0;
-                for (auto child : current -> children) {
-                    double ucb_val = child -> ucb(exploration_constant);
+                for (auto child : current->children) {
+                    double ucb_val = child->ucb(exploration_constant);
                     if (ucb_val == std::numeric_limits<double>::infinity()) {
                         best_child = child;
                         break;
@@ -217,8 +224,8 @@ namespace ChessSimulator {
                         best_child = child;
                     }
                 }
+                current = best_child;
                 current_board.makeMove(current->move_from_parent);
-                //current = best_child;
             }
 
             /*
@@ -247,25 +254,19 @@ namespace ChessSimulator {
 
             // Expand
             if (!is_terminal) {
-                if (current -> visits > 0 || current == root) {
-                    chess::Movelist moves;
-                    chess::movegen::legalmoves(moves, current->state);
+                if (current->visits > 0 || current == root) {
 
-                    // Explore
                     std::sort(moves.begin(), moves.end(), [&](const chess::Move& a, const chess::Move& b) {
-                        return current->state.isCapture(a) > current->state.isCapture(b);
+                        return current_board.isCapture(a) > current_board.isCapture(b);
                     });
 
                     for (auto move : moves) {
-                        //chess::Board child_board = current -> state;
                         current_board.makeMove(move);
                         current->children.push_back(new MCTSNode(current, move, current_board.hash()));
                         current_board.unmakeMove(move);
-                        //child_board.makeMove(move);
-                        //current->children.push_back(new MCTSNode(current, move, current_board.hash()));
                     }
 
-                    current = current -> children[0];
+                    current = current->children[0];
                     current_board.makeMove(current->move_from_parent);
                 }
             }
