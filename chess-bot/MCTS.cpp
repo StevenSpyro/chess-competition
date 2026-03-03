@@ -249,14 +249,15 @@ namespace ChessSimulator {
             global_mcts_root->parent = nullptr;
         }
 
-        //std::cout << "Total Iterations: " << root->visits << std::endl;
-        //if (best_child) {
-        //    double win_rate = (best_child->wins / best_child->visits) * 100.0;
-        //    std::cout << "Best Move: " << chess::uci::moveToUci(best_move) << std::endl;
-        //    std::cout << "Node Visits: " << best_child->visits << std::endl;
-        //    std::cout << "Expected Win Rate: " << win_rate << "%" << std::endl;
-        //}
-
+        /*
+        std::cout << "Total Iterations: " << root->visits << std::endl;
+        if (best_child) {
+            double win_rate = (best_child->wins / best_child->visits) * 100.0;
+            std::cout << "Best Move: " << chess::uci::moveToUci(best_move) << std::endl;
+            std::cout << "Node Visits: " << best_child->visits << std::endl;
+            std::cout << "Expected Win Rate: " << win_rate << "%" << std::endl;
+        }
+        */
         //delete root;
         return chess::uci::moveToUci(best_move);
     }
