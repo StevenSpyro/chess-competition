@@ -227,6 +227,22 @@ namespace ChessSimulator {
 
         chess::Move best_move = best_child ? best_child->move_from_parent : root_moves[0];
 
+        if (best_child) {
+            // Remove child from root
+            for (auto& child : global_mcts_root->children) {
+                if (child != best_child) {
+                    delete child;
+                }
+            }
+            global_mcts_root->children.clear();
+
+            // Delete root memory
+            delete global_mcts_root;
+
+            global_mcts_root = best_child;
+            global_mcts_root->parent = nullptr;
+        }
+
         //std::cout << "Total Iterations: " << root->visits << std::endl;
         //if (best_child) {
         //    double win_rate = (best_child->wins / best_child->visits) * 100.0;

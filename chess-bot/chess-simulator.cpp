@@ -23,6 +23,10 @@ std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
   // extra points if you create your own board/move representation instead of
   // using the one provided by the library
 
+  if (fen == "startpos") {
+    fen = chess::constants::STARTPOS;
+  }
+
   if (evalcache.size() > 1000000) {
     evalcache.clear();
   }
