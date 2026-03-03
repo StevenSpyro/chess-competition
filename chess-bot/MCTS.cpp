@@ -31,11 +31,13 @@ namespace ChessSimulator {
         return children.empty();
     }
 
+    /*
     bool MCTSNode::isTerminal() {
         chess::Movelist moves;
         chess::movegen::legalmoves(moves, state);
         return moves.empty() || state.halfMoveClock() >= 100;
     }
+    */
 
     double rollout(chess::Board board) {
         chess::Color start_turn = board.sideToMove();
@@ -201,7 +203,7 @@ namespace ChessSimulator {
             // New format to hopefully encourage making the bot want to kill
             double exploration_constant = 0.5;
 
-            while (!current -> isLeaf() && !current -> isTerminal()) {
+            while (!current -> isLeaf()) {
                 MCTSNode* best_child = nullptr;
                 double best_ucb = -1.0;
                 for (auto child : current -> children) {
@@ -215,7 +217,8 @@ namespace ChessSimulator {
                         best_child = child;
                     }
                 }
-                current = best_child;
+                current_board.makeMove(current->move_from_parent);
+                //current = best_child;
             }
 
             /*
@@ -238,8 +241,12 @@ namespace ChessSimulator {
             }
             */
 
+            chess::Movelist moves;
+            chess::movegen::legalmoves(moves, current_board);
+            bool is_terminal = moves.empty() || current_board.halfMoveClock() >= 100;
+
             // Expand
-            if (!current -> isTerminal()) {
+            if (!current -> is_terminal) {
                 if (current -> visits > 0 || current == root) {
                     chess::Movelist moves;
                     chess::movegen::legalmoves(moves, current->state);
@@ -250,12 +257,16 @@ namespace ChessSimulator {
                     });
 
                     for (auto move : moves) {
-                        chess::Board child_board = current -> state;
-                        child_board.makeMove(move);
+                        //chess::Board child_board = current -> state;
+                        current_board.makeMove(move);
                         current->children.push_back(new MCTSNode(current, move, current_board.hash()));
+                        current_board.unmakeMove(move);
+                        //child_board.makeMove(move);
+                        //current->children.push_back(new MCTSNode(current, move, current_board.hash()));
                     }
 
                     current = current -> children[0];
+                    current_board.makeMove(current->move_from_parent);
                 }
             }
 
@@ -275,7 +286,8 @@ namespace ChessSimulator {
             }
         }
 
-        chess::Move best_move = best_child ? best_child->move_from_parent : root_moves[0];
+        //chess::Move best_move = best_child ? best_child->move_from_parent : root_moves[0];
+        chess::Move best_move = root_moves[0];
 
         if (best_child) {
             // Remove child from root

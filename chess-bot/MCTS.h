@@ -27,7 +27,7 @@ namespace ChessSimulator {
         double ucb(double C = std::sqrt(2.0));
 
         bool isLeaf();
-        bool isTerminal();
+        //bool isTerminal();
     };
 
     std::string getBestMoveMCTS(const std::string& fen, int timeLimitMs);
