@@ -23,28 +23,35 @@ std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
   // extra points if you create your own board/move representation instead of
   // using the one provided by the library
 
+  if (!fen.empty()) {
+    fen.erase(0, fen.find_first_not_of(" \n\r\t"));
+    fen.erase(fen.find_last_not_of(" \n\r\t") + 1);
+  }
 
-  if (fen == "startpos") {
+  if (fen.find("startpos") != std::string::npos) {
     fen = chess::constants::STARTPOS;
+  } else if (fen.find("position fen ") == 0) {
+    fen = fen.substr(13);
   }
 
   if (evalcache.size() > 1000000) {
     evalcache.clear();
   }
 
-  // Here goes a random movement
-  chess::Board board(fen);
-
   // Need to implement this so that there is a key to access. board.hash()
 
   // Implement this so it is faster and better. std::unordered_map<uint64_t, int> evalcache
 
+  chess::Board board(fen);
   chess::Movelist moves;
   chess::movegen::legalmoves(moves, board);
+
   if(moves.size() == 0)
     return "";
 
-  //return getBestMoveMCTS(fen, timeLimitMs);
+  return getBestMoveMCTS(fen, timeLimitMs);
+
+  /*
 
   // Make the game use MCTS and then the Minimax
   if (board.sideToMove() == chess::Color::WHITE) {
@@ -78,6 +85,7 @@ std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
     }
     return chess::uci::moveToUci(bestMoveGlobal);
   }
+  */
 }
 
 
