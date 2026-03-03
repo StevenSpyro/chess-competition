@@ -173,7 +173,7 @@ namespace ChessSimulator {
         }
 
         int iterations = 0;
-        int max_iterations = 85000;
+        int max_iterations = 30000;
 
         while (iterations < max_iterations) {
 
@@ -187,6 +187,28 @@ namespace ChessSimulator {
 
             // Select
             MCTSNode* current = root;
+
+            // New format to hopefully encourage making the bot want to kill
+            double exploration_constant = 0.5;
+
+            while (!current -> isLeaf() && !current -> isTerminal()) {
+                MCTSNode* best_child = nullptr;
+                double best_ucb = -1.0;
+                for (auto child : current -> children) {
+                    double ucb_val = child -> ucb(exploration_constant);
+                    if (ucb_val == std::numeric_limits<double>::infinity()) {
+                        best_child = child;
+                        break;
+                    }
+                    if (ucb_val > best_ucb) {
+                        best_ucb = ucb_val;
+                        best_child = child;
+                    }
+                }
+                current = best_child;
+            }
+
+            /*
             while (!current -> isLeaf() && !current -> isTerminal()) {
                 MCTSNode* best_child = nullptr;
                 double best_ucb = -1.0;
@@ -204,6 +226,7 @@ namespace ChessSimulator {
 
                 current = best_child;
             }
+            */
 
             // Expand
             if (!current -> isTerminal()) {
