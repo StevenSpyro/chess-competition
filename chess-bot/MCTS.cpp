@@ -60,7 +60,7 @@ namespace ChessSimulator {
             }
 
             // Make sure that this stops and evaluates because without it the AI is NOT good.
-            if (depth >= max_rollout_depth || board.halfMoveClock() >= 1000) {
+            if (depth >= max_rollout_depth || board.halfMoveClock() >= 100) {
 
                 int score = ChessSimulator::evaluate(board);
 
@@ -173,7 +173,7 @@ namespace ChessSimulator {
         }
 
         int iterations = 0;
-        int max_iterations = 90000;
+        int max_iterations = 85000;
 
         while (iterations < max_iterations) {
 
@@ -260,7 +260,7 @@ namespace ChessSimulator {
             global_mcts_root->parent = nullptr;
         }
 
-
+        /*
         std::cout << "Total Iterations: " << root->visits << std::endl;
         if (best_child) {
             double win_rate = (best_child->wins / best_child->visits) * 100.0;
@@ -268,6 +268,7 @@ namespace ChessSimulator {
             std::cout << "Node Visits: " << best_child->visits << std::endl;
             std::cout << "Expected Win Rate: " << win_rate << "%" << std::endl;
         }
+        */
 
         //delete root;
         return chess::uci::moveToUci(best_move);
