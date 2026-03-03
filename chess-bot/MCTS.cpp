@@ -174,11 +174,18 @@ namespace ChessSimulator {
             buffer = 0;
         }
 
-        while (true) {
-            auto now = std::chrono::steady_clock::now();
-            if (std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count() >= (budget - buffer)) {
-                break;
+        int iterations = 0;
+        int max_iterations = 10000;
+
+        while (iterations < max_iterations) {
+
+            if (iterations % 50 == 0) {
+                auto now = std::chrono::steady_clock::now();
+                if (std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count() >= (budget - buffer)) {
+                    break;
+                }
             }
+            iterations++;
 
             // Select
             MCTSNode* current = root;
