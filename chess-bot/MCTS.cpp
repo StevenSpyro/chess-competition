@@ -168,6 +168,10 @@ namespace ChessSimulator {
         int budget = timeLimitMs > 0 ? timeLimitMs : 1000;
         int buffer = 50; // Buffer time
 
+        if (budget <= buffer) {
+            buffer = 0;
+        }
+
         while (true) {
             auto now = std::chrono::steady_clock::now();
             if (std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count() >= (budget - buffer)) {
