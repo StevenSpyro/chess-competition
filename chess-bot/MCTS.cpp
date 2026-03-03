@@ -246,7 +246,7 @@ namespace ChessSimulator {
             bool is_terminal = moves.empty() || current_board.halfMoveClock() >= 100;
 
             // Expand
-            if (!current -> is_terminal) {
+            if (!is_terminal) {
                 if (current -> visits > 0 || current == root) {
                     chess::Movelist moves;
                     chess::movegen::legalmoves(moves, current->state);
