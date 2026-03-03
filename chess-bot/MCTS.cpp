@@ -34,7 +34,7 @@ namespace ChessSimulator {
     bool MCTSNode::isTerminal() {
         chess::Movelist moves;
         chess::movegen::legalmoves(moves, state);
-        return moves.empty() || state.halfMoveClock() >= 5000;
+        return moves.empty() || state.halfMoveClock() >= 100;
     }
 
     double rollout(chess::Board board) {
@@ -60,7 +60,7 @@ namespace ChessSimulator {
             }
 
             // Make sure that this stops and evaluates because without it the AI is NOT good.
-            if (depth >= max_rollout_depth || board.halfMoveClock() >= 5000) {
+            if (depth >= max_rollout_depth || board.halfMoveClock() >= 1000) {
 
                 int score = ChessSimulator::evaluate(board);
 
@@ -173,7 +173,7 @@ namespace ChessSimulator {
         }
 
         int iterations = 0;
-        int max_iterations = 95000;
+        int max_iterations = 90000;
 
         while (iterations < max_iterations) {
 
