@@ -9,7 +9,6 @@ namespace ChessSimulator {
 
     static MCTSNode* global_mcts_root = nullptr;
 
-    // RAM SHIELD: Tracks exactly how much memory the tree is using
     static int mcts_node_count = 0;
 
     MCTSNode::MCTSNode(MCTSNode* p, chess::Move m, uint64_t h)
@@ -50,13 +49,13 @@ namespace ChessSimulator {
 
         int score_B = ChessSimulator::quiescence(board, -1000000, 1000000, 0);
         int score_A = -score_B;
-        int clamped_score = std::max(-2000, std::min(2000, score_A));
+        //int clamped_score = std::max(-2000, std::min(2000, score_A));
 
         // Prefers faster wins
-        double advantage = clamped_score / 4000.0;
-        advantage *= std::pow(0.99, tree_depth);
-
-        double win_prob_A = 0.5 + advantage;
+        //double advantage = clamped_score / 4000.0;
+        //advantage *= std::pow(0.99, tree_depth);
+        double expected_win = 1.0 / (1.0 + std::pow(10.0, -score_A / 400.0));
+        double win_prob_A = 0.5 + (expected_win - 0.5) * std::pow(0.98, tree_depth);
 
         return std::max(0.001, std::min(0.999, win_prob_A));
     }
@@ -127,7 +126,7 @@ namespace ChessSimulator {
         }
 
         int iterations = 0;
-        double exploration_constant = 0.5;
+        double exploration_constant = 0.15;
 
         // Should be 10 seconds
         while (true) {
@@ -214,7 +213,7 @@ namespace ChessSimulator {
                 chess::Board test_board = board;
                 test_board.makeMove(child->move_from_parent);
                 if (test_board.isRepetition()) {
-                    effective_visits = -1; // PHYSICALLY REJECT DRAW
+                    effective_visits = -1;
                 }
             }
 
