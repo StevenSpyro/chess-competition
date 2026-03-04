@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <limits>
 #include <unordered_map>
+#include <chrono>
 #include "chess-simulator.h"
 
 using namespace chess;
@@ -212,7 +213,23 @@ namespace ChessSimulator {
         return alpha;
     }
 
-    int minimax(chess::Board& board, int depth, int alpha, int beta) {
+    static int node_count = 0;
+
+    int minimax(chess::Board& board, int depth, int alpha, int beta,
+                std::chrono::time_point<std::chrono::steady_clock> startTime,
+                int time_limit, bool& time_up) {
+
+        // EMERGENCY BRAKE: Check the clock every 2048 nodes
+        if ((node_count++ & 2047) == 0) {
+            auto now = std::chrono::steady_clock::now();
+            if (std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count() >= time_limit) {
+                time_up = true;
+                return 0;
+            }
+        }
+
+        if (time_up) return 0; // Abort instantly if time is out
+
         if (depth == 0) return quiescence(board, alpha, beta, 0);
         if (board.isRepetition() || board.halfMoveClock() >= 100) return 0;
 
@@ -221,22 +238,21 @@ namespace ChessSimulator {
 
         if (moves.size() == 0) {
             if (board.inCheck()) return -30000 + (20 - depth);
-            return 0; // Stalemate
+            return 0;
         }
 
-        //int bestScore = std::numeric_limits<int>::min();
-
-        // Makes pruning faster
         std::sort(moves.begin(), moves.end(), [&](const chess::Move& a, const chess::Move& b) {
-        return board.isCapture(a) > board.isCapture(b);
-    });
+            return board.isCapture(a) > board.isCapture(b);
+        });
 
         for (auto move : moves) {
             board.makeMove(move);
-            int score = -minimax(board, depth - 1, -beta, -alpha);
+            int score = -minimax(board, depth - 1, -beta, -alpha, startTime, time_limit, time_up);
             board.unmakeMove(move);
 
-            if (score >= beta) return beta; // Prune
+            if (time_up) return 0; // Abort instantly if time is out
+
+            if (score >= beta) return beta;
             if (score > alpha) alpha = score;
         }
 

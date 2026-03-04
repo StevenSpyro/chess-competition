@@ -13,6 +13,10 @@ using namespace ChessSimulator;
 
 namespace ChessSimulator {
   extern std::unordered_map<uint64_t, int> evalcache;
+
+  int minimax(chess::Board& board, int depth, int alpha, int beta,
+              std::chrono::time_point<std::chrono::steady_clock> startTime,
+              int time_limit, bool& time_up);
 }
 
 std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
@@ -37,7 +41,8 @@ std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
 
   auto startTime = std::chrono::steady_clock::now();
   int budget = timeLimitMs > 0 ? timeLimitMs : 10000;
-  int buffer = 500;
+  int time_limit = budget - 500;
+  bool time_up = false;
 
   chess::Move bestMoveGlobal = moves[0];
 
@@ -52,18 +57,12 @@ std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
 
     for (auto& move : moves) {
       board.makeMove(move);
-      int score = -ChessSimulator::minimax(board, depth - 1, -1000000, 1000000);
+      int score = -ChessSimulator::minimax(board, depth - 1, -1000000, 1000000, startTime, time_limit, time_up);
       board.unmakeMove(move);
 
       if (score > bestScore) {
         bestScore = score;
         currentBestMove = move;
-      }
-
-      // Time check
-      auto now = std::chrono::steady_clock::now();
-      if (std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count() >= (budget - buffer)) {
-        return chess::uci::moveToUci(bestMoveGlobal);
       }
     }
 
@@ -75,7 +74,7 @@ std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
     }
   }
 
-  return getBestMoveMCTS(fen, timeLimitMs);
+  return chess::uci::moveToUci(bestMoveGlobal);
 
   /*
 
