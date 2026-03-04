@@ -33,7 +33,7 @@ namespace ChessSimulator {
 
     double rollout(chess::Board board, int tree_depth) {
         if (board.halfMoveClock() >= 100 || board.isRepetition()) {
-            return 0.40; // Draw bad
+            return 0.5; // Draw bad
         }
 
         chess::Movelist moves;
@@ -44,7 +44,7 @@ namespace ChessSimulator {
                 // mated.
                 return 0.51 + (0.49 * std::pow(0.99, tree_depth));
             }
-            return 0.40; // Stalemate
+            return 0.5; // Stalemate
         }
 
         int current_player_score = ChessSimulator::quiescence(board, -1000000, 1000000, 0);
@@ -52,7 +52,7 @@ namespace ChessSimulator {
         int clamped_score = std::max(-2000, std::min(2000, move_maker_score));
 
         double advantage = clamped_score / 4000.0;
-        advantage *= std::pow(0.99, tree_depth); // Decay stops plateau shuffling
+        advantage *= std::pow(0.99, tree_depth); // Decay
 
         double win_prob = 0.5 + advantage;
 
@@ -131,7 +131,7 @@ namespace ChessSimulator {
         bool avoid_draw = root_eval > -50;
 
         int iterations = 0;
-        int max_iterations = 2000000; // Unleashed to use full 10s time limit
+        int max_iterations = 2000000;
         double exploration_constant = 0.5;
 
         while (iterations < max_iterations) {
@@ -214,7 +214,7 @@ namespace ChessSimulator {
                 chess::Board test_board = board;
                 test_board.makeMove(child->move_from_parent);
                 if (test_board.isRepetition()) {
-                    effective_visits = -1; // SHIELD: Refuse to draw!
+                    effective_visits = -1;
                 }
             }
 
@@ -229,8 +229,6 @@ namespace ChessSimulator {
         if (best_child != nullptr) {
             best_move = best_child->move_from_parent;
         } else {
-            // PANIC FALLBACK: If absolutely everything evaluates poorly,
-            // force the bot to pick the first move that ISN'T a repetition.
             best_move = root_moves[0];
             for (auto m : root_moves) {
                 chess::Board test_board = board;
