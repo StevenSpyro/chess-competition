@@ -44,7 +44,7 @@ namespace ChessSimulator {
 
         if (moves.empty()) {
             if (board.inCheck()) {
-                if (board.sideToMove() == start_turn) return 0.0;
+                //if (board.sideToMove() == start_turn) return 0.0;
                 return 0.51 + (0.49 * std::pow(0.99, tree_depth));
             }
             return 0.1;
@@ -179,7 +179,7 @@ namespace ChessSimulator {
                 if (current->visits > 0 || current == root) {
 
                     // Save mem
-                    if (mcts_node_count < 50000) {
+                    if (mcts_node_count < 100000) {
                         std::sort(moves.begin(), moves.end(), [&](const chess::Move& a, const chess::Move& b) {
                             return current_board.isCapture(a) > current_board.isCapture(b);
                         });
@@ -210,12 +210,10 @@ namespace ChessSimulator {
         for (auto child : root->children) {
             int effective_visits = child->visits;
 
-            if (avoid_draw) {
-                chess::Board test_board = board;
-                test_board.makeMove(child->move_from_parent);
-                if (test_board.isRepetition()) {
-                    effective_visits = -1;
-                }
+            chess::Board test_board = board;
+            test_board.makeMove(child->move_from_parent);
+            if (test_board.isRepetition()) {
+                effective_visits = -1;
             }
 
             if (effective_visits > max_visits) {
