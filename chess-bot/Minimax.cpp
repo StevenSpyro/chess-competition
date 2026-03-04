@@ -182,8 +182,8 @@ namespace ChessSimulator {
         // Generate capture
         chess::movegen::legalmoves<chess::movegen::MoveGenType::CAPTURE>(captures, board);
         std::sort(captures.begin(), captures.end(), [&](const chess::Move& a, const chess::Move& b) {
-            int victim_a = (int)board.at(a.to()).type().internal();
-            int victim_b = (int)board.at(b.to()).type().internal();
+            int victim_a = board.at(a.to()) != chess::Piece::NONE ? (int)board.at(a.to()).type().internal() : 0;
+            int victim_b = board.at(b.to()) != chess::Piece::NONE ? (int)board.at(b.to()).type().internal() : 0;
             return victim_a > victim_b;
         });
 

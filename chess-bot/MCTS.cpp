@@ -231,7 +231,7 @@ namespace ChessSimulator {
 
         // Timer just like the Minimax
         int budget = timeLimitMs > 0 ? timeLimitMs : 10000;
-        int buffer = 200; // Buffer time
+        int buffer = 500; // Buffer time
 
         if (budget <= buffer) {
             buffer = 0;
@@ -243,7 +243,7 @@ namespace ChessSimulator {
 
         while (true) {
 
-            if (iterations % 50 == 0) {
+            if (iterations % 10 == 0) {
                 auto now = std::chrono::steady_clock::now();
                 if (std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count() >= (budget - buffer)) {
                     break;
