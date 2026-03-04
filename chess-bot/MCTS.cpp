@@ -141,7 +141,7 @@ namespace ChessSimulator {
 
         int iterations = 0;
         // Please don't break the website
-        int max_iterations = 200000;
+        int max_iterations = 2000000;
         double exploration_constant = 0.5;
 
         // Select
