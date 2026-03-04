@@ -50,8 +50,30 @@ namespace ChessSimulator {
         chess::Movelist moves;
         chess::movegen::legalmoves(moves, board);
 
-        static std::mt19937 gen(std::chrono::system_clock::now().time_since_epoch().count());
+        //static std::mt19937 gen(std::chrono::system_clock::now().time_since_epoch().count());
 
+        if (moves.empty()) {
+            if (board.inCheck()) {
+                // Checkmated
+                if (board.sideToMove() == start_turn) return 0.0;
+                return 0.51 + (0.49 * std::pow(0.99, tree_depth));
+            }
+            return 0.5; // Stale
+        }
+
+        int score = ChessSimulator::quiescence(board, -1000000, 1000000, 0);
+        int relative_score = (board.sideToMove() == start_turn) ? score : -score;
+
+        int clamped_score = std::max(-2000, std::min(2000, relative_score));
+
+        double win_prob = 0.5 + (clamped_score / 4000.0);
+
+        if (win_prob > 0.999) win_prob = 0.999;
+        if (win_prob < 0.001) win_prob = 0.001;
+
+        return win_prob;
+
+        /*
         int depth = 0;
         int max_rollout_depth = 30;
 
@@ -77,7 +99,7 @@ namespace ChessSimulator {
             int relative_score = (board.sideToMove() == start_turn) ? score : -score;
             return 1.0 / (1.0 + std::pow(10.0, -relative_score / 400.0));
 
-            /*
+
             chess::Movelist moves;
             chess::movegen::legalmoves(moves, board);
 
@@ -136,7 +158,6 @@ namespace ChessSimulator {
             //board.makeMove(moves[dist(gen)]);
             //depth++;
             */
-        }
     }
 
     // Allows for the flipping of the result.
