@@ -47,31 +47,27 @@ namespace ChessSimulator {
         int max_rollout_depth = 30;
 
         while (true) {
+            // The game ends in stalemate or a checkmate
+            if (board.halfMoveClock() >= 100 || board.isRepetition()) {
+                return 0.5;
+            }
+
             chess::Movelist moves;
             chess::movegen::legalmoves(moves, board);
 
             // The game ends in stalemate or a checkmate
             if (moves.empty()) {
                 if (board.inCheck()) {
-                    if (board.sideToMove() == start_turn) {
-                        return 0.0; // Mated
-                    } else {
-                        return 0.51 + (0.49 * std::pow(0.99, tree_depth + depth));
-                    }
+                    return (board.sideToMove() == start_turn) ? 0.0 : 1.0;
                 }
-                return 0.5; // Staled
+                return 0.5; // Stale
             }
 
             // Make sure that this stops and evaluates because without it the AI is NOT good.
-            if (depth >= max_rollout_depth || board.halfMoveClock() >= 100) {
-
+            if (depth >= max_rollout_depth) {
                 int score = ChessSimulator::evaluate(board);
                 int relative_score = (board.sideToMove() == start_turn) ? score : -score;
                 return 1.0 / (1.0 + std::pow(10.0, -relative_score / 400.0));
-
-                //double win_probability = 1.0 / (1.0 + std::pow(10.0, -relative_score / 400.0));
-
-                // win_probability;
             }
 
             // Have a greater preference for captures
@@ -125,6 +121,7 @@ namespace ChessSimulator {
 
         if (root_moves.empty()) return "";
 
+        // Check for Mate
         for (auto move : root_moves) {
             board.makeMove(move);
             chess::Movelist responses;
@@ -207,7 +204,7 @@ namespace ChessSimulator {
                 chess::Movelist legal_moves;
                 chess::movegen::legalmoves(legal_moves, current_board);
 
-                if (legal_moves.empty() || current_board.halfMoveClock() >= 100) {
+                if (legal_moves.empty() || current_board.halfMoveClock() >= 100 || current_board.isRepetition()) {
                     break; // Terminal state reached safely
                 }
 
@@ -252,7 +249,7 @@ namespace ChessSimulator {
 
             chess::Movelist moves;
             chess::movegen::legalmoves(moves, current_board);
-            bool is_terminal = moves.empty() || current_board.halfMoveClock() >= 100;
+            bool is_terminal = moves.empty() || current_board.halfMoveClock() >= 100 || current_board.isRepetition();
 
             // Expand
             if (!is_terminal) {
