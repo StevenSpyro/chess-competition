@@ -42,6 +42,14 @@ namespace ChessSimulator {
 
     double rollout(chess::Board board, int tree_depth) {
         chess::Color start_turn = board.sideToMove();
+
+        if (board.halfMoveClock() >= 100 || board.isRepetition()) {
+            return 0.5;
+        }
+
+        chess::Movelist moves;
+        chess::movegen::legalmoves(moves, board);
+
         static std::mt19937 gen(std::chrono::system_clock::now().time_since_epoch().count());
 
         int depth = 0;
@@ -53,6 +61,23 @@ namespace ChessSimulator {
                 return 0.5;
             }
 
+            if (moves.empty()) {
+                if (board.inCheck()) {
+                    if (board.sideToMove() == start_turn) {
+                        return 0.0; // We got mated
+                    } else {
+                        // Mate
+                        return 0.51 + (0.49 * std::pow(0.99, tree_depth));
+                    }
+                }
+                return 0.5; // Stalemate
+            }
+
+            int score = ChessSimulator::quiescence(board, -1000000, 1000000, 0);
+            int relative_score = (board.sideToMove() == start_turn) ? score : -score;
+            return 1.0 / (1.0 + std::pow(10.0, -relative_score / 400.0));
+
+            /*
             chess::Movelist moves;
             chess::movegen::legalmoves(moves, board);
 
@@ -65,13 +90,13 @@ namespace ChessSimulator {
             }
 
             // Make sure that this stops and evaluates because without it the AI is NOT good. OLD BEFORE QUIESCENCE
-            /*
+
             if (depth >= max_rollout_depth) {
                 int score = ChessSimulator::evaluate(board);
                 int relative_score = (board.sideToMove() == start_turn) ? score : -score;
                 return 1.0 / (1.0 + std::pow(10.0, -relative_score / 400.0));
             }
-            */
+
 
             if (depth >= max_rollout_depth) {
                 int score = ChessSimulator::quiescence(board, -1000000, 1000000, 0);
@@ -110,6 +135,7 @@ namespace ChessSimulator {
             //std::uniform_int_distribution<> dist(0, moves.size() - 1);
             //board.makeMove(moves[dist(gen)]);
             //depth++;
+            */
         }
     }
 
