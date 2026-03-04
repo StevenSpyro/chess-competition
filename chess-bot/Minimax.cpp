@@ -158,7 +158,9 @@ namespace ChessSimulator {
         int perspective = (board.sideToMove() == Color::WHITE) ? 1 : -1;
         int final_eval = finalScore * perspective;
 
-        evalcache[hashKey] = final_eval;
+        if (evalcache.size() < 500000) {
+            evalcache[hashKey] = final_eval;
+        }
 
         return final_eval;
     }
