@@ -8,16 +8,18 @@
 namespace ChessSimulator {
 
     static MCTSNode* global_mcts_root = nullptr;
-
-    static int mcts_node_count = 0;
+    static int mcts_node_count = 0; // Tracks RAM usage
 
     MCTSNode::MCTSNode(MCTSNode* p, chess::Move m, uint64_t h)
-        : parent(p), move_from_parent(m), hash(h), wins(0.0), visits(0) {}
+        : parent(p), move_from_parent(m), hash(h), wins(0.0), visits(0) {
+        mcts_node_count++;
+    }
 
     MCTSNode::~MCTSNode() {
         for (auto child : children) {
             delete child;
         }
+        mcts_node_count--;
     }
 
     double MCTSNode::ucb(double C) {
@@ -30,11 +32,8 @@ namespace ChessSimulator {
     }
 
     double rollout(chess::Board board, int tree_depth) {
-        chess::Color start_turn = board.sideToMove();
-
-        // Flip
         if (board.halfMoveClock() >= 100 || board.isRepetition()) {
-            return 0.55;
+            return 0.40; // Draw bad
         }
 
         chess::Movelist moves;
@@ -42,20 +41,18 @@ namespace ChessSimulator {
 
         if (moves.empty()) {
             if (board.inCheck()) {
-                if (board.sideToMove() == start_turn) return 0.0;
+                // mated.
                 return 0.51 + (0.49 * std::pow(0.99, tree_depth));
             }
-            return 0.55; // Stale
+            return 0.40; // Stalemate
         }
 
-        int score = ChessSimulator::quiescence(board, -1000000, 1000000, 0);
-        int relative_score = (board.sideToMove() == start_turn) ? score : -score;
+        int current_player_score = ChessSimulator::quiescence(board, -1000000, 1000000, 0);
+        int move_maker_score = -current_player_score;
+        int clamped_score = std::max(-2000, std::min(2000, move_maker_score));
 
-        int clamped_score = std::max(-2000, std::min(2000, relative_score));
-
-        // Decay
         double advantage = clamped_score / 4000.0;
-        advantage *= std::pow(0.99, tree_depth);
+        advantage *= std::pow(0.99, tree_depth); // Decay stops plateau shuffling
 
         double win_prob = 0.5 + advantage;
 
@@ -65,7 +62,6 @@ namespace ChessSimulator {
         return win_prob;
     }
 
-    // Allows for the flipping of the result.
     void backpropagate(MCTSNode* node, double result) {
         while (node != nullptr) {
             node -> visits++;
@@ -82,7 +78,6 @@ namespace ChessSimulator {
 
         if (root_moves.empty()) return "";
 
-        // Check for Mate
         for (auto move : root_moves) {
             board.makeMove(move);
             chess::Movelist responses;
@@ -95,14 +90,11 @@ namespace ChessSimulator {
             }
         }
 
-        // Tree Reuse
         if (global_mcts_root == nullptr) {
             global_mcts_root = new MCTSNode(nullptr, chess::Move::NULL_MOVE, board.hash());
         } else {
-            // Get current board state in the tree
             MCTSNode* matching_child = nullptr;
             for (auto child : global_mcts_root->children) {
-                // Compare with the current Zobrist hash
                 if (child -> hash == board.hash()) {
                     matching_child = child;
                     break;
@@ -110,7 +102,6 @@ namespace ChessSimulator {
             }
 
             if (matching_child) {
-                // Take the opponents move into the system so it can't be deleted
                 for (auto& child : global_mcts_root->children) {
                     if (child != matching_child) {
                         delete child;
@@ -121,7 +112,6 @@ namespace ChessSimulator {
                 global_mcts_root = matching_child;
                 global_mcts_root -> parent = nullptr;
             } else {
-                // Start over
                 delete global_mcts_root;
                 global_mcts_root = new MCTSNode(nullptr, chess::Move::NULL_MOVE, board.hash());
             }
@@ -130,9 +120,8 @@ namespace ChessSimulator {
         MCTSNode* root = global_mcts_root;
         auto startTime = std::chrono::steady_clock::now();
 
-        // Timer just like the Minimax
         int budget = timeLimitMs > 0 ? timeLimitMs : 10000;
-        int buffer = 500; // Buffer time
+        int buffer = 500;
 
         if (budget <= buffer) {
             buffer = 0;
@@ -142,11 +131,9 @@ namespace ChessSimulator {
         bool avoid_draw = root_eval > -50;
 
         int iterations = 0;
-        // Please don't break the website
-        int max_iterations = 2000000;
+        int max_iterations = 2000000; // Unleashed to use full 10s time limit
         double exploration_constant = 0.5;
 
-        // Select
         while (iterations < max_iterations) {
 
             if (iterations % 50 == 0) {
@@ -191,30 +178,29 @@ namespace ChessSimulator {
             chess::movegen::legalmoves(moves, current_board);
             bool is_terminal = moves.empty() || current_board.halfMoveClock() >= 100 || current_board.isRepetition();
 
-            // Expand
             if (!is_terminal) {
                 if (current->visits > 0 || current == root) {
 
-                    std::sort(moves.begin(), moves.end(), [&](const chess::Move& a, const chess::Move& b) {
-                        return current_board.isCapture(a) > current_board.isCapture(b);
-                    });
+                    // Limit mem since that might be an issue still
+                    if (mcts_node_count < 50000) {
+                        std::sort(moves.begin(), moves.end(), [&](const chess::Move& a, const chess::Move& b) {
+                            return current_board.isCapture(a) > current_board.isCapture(b);
+                        });
 
-                    for (auto move : moves) {
-                        current_board.makeMove(move);
-                        current->children.push_back(new MCTSNode(current, move, current_board.hash()));
-                        current_board.unmakeMove(move);
+                        for (auto move : moves) {
+                            current_board.makeMove(move);
+                            current->children.push_back(new MCTSNode(current, move, current_board.hash()));
+                            current_board.unmakeMove(move);
+                        }
+
+                        current = current->children[0];
+                        current_board.makeMove(current->move_from_parent);
+                        tree_depth++;
                     }
-
-                    current = current->children[0];
-                    current_board.makeMove(current->move_from_parent);
-                    tree_depth++;
                 }
             }
 
-            // Sim
             double result = rollout(current_board, tree_depth);
-
-            // Backprop
             backpropagate(current, 1.0 - result);
         }
 
@@ -224,12 +210,11 @@ namespace ChessSimulator {
         for (auto child : root->children) {
             int effective_visits = child->visits;
 
-            // Prevent repetition please. Draw threefold is my enemy.
             if (avoid_draw) {
                 chess::Board test_board = board;
                 test_board.makeMove(child->move_from_parent);
                 if (test_board.isRepetition()) {
-                    effective_visits = -1;
+                    effective_visits = -1; // SHIELD: Refuse to draw!
                 }
             }
 
@@ -239,22 +224,37 @@ namespace ChessSimulator {
             }
         }
 
-        chess::Move best_move = root_moves[0];
+        chess::Move best_move;
+
+        if (best_child != nullptr) {
+            best_move = best_child->move_from_parent;
+        } else {
+            // PANIC FALLBACK: If absolutely everything evaluates poorly,
+            // force the bot to pick the first move that ISN'T a repetition.
+            best_move = root_moves[0];
+            for (auto m : root_moves) {
+                chess::Board test_board = board;
+                test_board.makeMove(m);
+                if (!test_board.isRepetition()) {
+                    best_move = m;
+                    break;
+                }
+            }
+        }
 
         if (best_child) {
-            best_move = best_child->move_from_parent;
-
-            // Remove child from root
             for (auto& child : global_mcts_root->children) {
                 if (child != best_child) {
                     delete child;
                 }
             }
             global_mcts_root->children.clear();
-            // Delete root memory
             delete global_mcts_root;
             global_mcts_root = best_child;
             global_mcts_root->parent = nullptr;
+        } else {
+            delete global_mcts_root;
+            global_mcts_root = nullptr;
         }
 
         return chess::uci::moveToUci(best_move);
