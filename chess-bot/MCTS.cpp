@@ -33,8 +33,10 @@ namespace ChessSimulator {
     }
 
     double rollout(chess::Board board, int tree_depth) {
+        chess::Color start_turn = board.sideToMove();
+
         if (board.halfMoveClock() >= 100 || board.isRepetition()) {
-            return 0.45; // Penalize draw
+            return 0.1;
         }
 
         chess::Movelist moves;
@@ -42,19 +44,18 @@ namespace ChessSimulator {
 
         if (moves.empty()) {
             if (board.inCheck()) {
-                return 1.0;
+                if (board.sideToMove() == start_turn) return 0.0;
+                return 0.51 + (0.49 * std::pow(0.99, tree_depth));
             }
-            return 0.45; // Stalemate
+            return 0.1;
         }
 
         int score_B = ChessSimulator::quiescence(board, -1000000, 1000000, 0);
         int score_A = -score_B;
-        //int clamped_score = std::max(-2000, std::min(2000, score_A));
 
-        // Prefers faster wins
-        //double advantage = clamped_score / 4000.0;
-        //advantage *= std::pow(0.99, tree_depth);
-        double expected_win = 1.0 / (1.0 + std::pow(10.0, -score_A / 400.0));
+        int clamped_score = std::max(-2000, std::min(2000, score_A));
+
+        double expected_win = 1.0 / (1.0 + std::pow(10.0, -clamped_score / 400.0));
         double win_prob_A = 0.5 + (expected_win - 0.5) * std::pow(0.98, tree_depth);
 
         return std::max(0.001, std::min(0.999, win_prob_A));
