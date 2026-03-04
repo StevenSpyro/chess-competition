@@ -64,9 +64,18 @@ namespace ChessSimulator {
                 return 0.5; // Stale
             }
 
-            // Make sure that this stops and evaluates because without it the AI is NOT good.
+            // Make sure that this stops and evaluates because without it the AI is NOT good. OLD BEFORE QUIESCENCE
+            /*
             if (depth >= max_rollout_depth) {
                 int score = ChessSimulator::evaluate(board);
+                int relative_score = (board.sideToMove() == start_turn) ? score : -score;
+                return 1.0 / (1.0 + std::pow(10.0, -relative_score / 400.0));
+            }
+            */
+
+            if (depth >= max_rollout_depth) {
+                int score = ChessSimulator::quiescence(board, -1000000, 1000000, 0);
+
                 int relative_score = (board.sideToMove() == start_turn) ? score : -score;
                 return 1.0 / (1.0 + std::pow(10.0, -relative_score / 400.0));
             }

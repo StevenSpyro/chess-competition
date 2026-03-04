@@ -163,6 +163,43 @@ namespace ChessSimulator {
         return final_eval;
     }
 
+    int quiescence(chess::Board& board, int alpha, int beta, int depth) {
+        int stand_pat = evaluate(board);
+
+        if (depth >= 10) return stand_pat;
+
+        if (stand_pat >= beta) {
+            return beta;
+        }
+        if (alpha < stand_pat) {
+            alpha = stand_pat;
+        }
+
+        chess::Movelist captures;
+
+        // Generate capture
+        chess::movegen::legalmoves<chess::movegen::MoveGenType::CAPTURE>(captures, board);
+        std::sort(captures.begin(), captures.end(), [&](const chess::Move& a, const chess::Move& b) {
+            int victim_a = (int)board.at(a.to()).type().internal();
+            int victim_b = (int)board.at(b.to()).type().internal();
+            return victim_a > victim_b;
+        });
+
+        for (auto move : captures) {
+            board.makeMove(move);
+            int score = -quiescence(board, -beta, -alpha, depth + 1);
+            board.unmakeMove(move);
+
+            if (score >= beta) {
+                return beta;
+            }
+            if (score > alpha) {
+                alpha = score;
+            }
+        }
+        return alpha;
+    }
+
     int minimax(chess::Board& board, int depth, int alpha, int beta) {
         if (depth == 0) return evaluate(board);
 

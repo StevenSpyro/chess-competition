@@ -11,6 +11,7 @@
 namespace ChessSimulator {
     int evaluate(chess::Board& board);
     int minimax(chess::Board& board, int depth, int alpha, int beta);
+    int quiescence(chess::Board& board, int alpha, int beta, int depth);
 }
 
 #endif //CHESS_MINIMAX_H
