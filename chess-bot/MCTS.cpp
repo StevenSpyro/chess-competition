@@ -39,7 +39,7 @@ namespace ChessSimulator {
     }
     */
 
-    double rollout(chess::Board board) {
+    double rollout(chess::Board board, int tree_depth) {
         chess::Color start_turn = board.sideToMove();
         static std::mt19937 gen(std::chrono::system_clock::now().time_since_epoch().count());
 
@@ -53,7 +53,12 @@ namespace ChessSimulator {
             // 1. The game ends in stalemate or a checkmate
             if (moves.empty()) {
                 if (board.inCheck()) {
-                    return (board.sideToMove() == start_turn) ? 0.0 : 1.0;
+                    double win_score = (board.sideToMove() == start_turn) ? 0.0 : 1.0;
+
+                    if (win_score > 0.5) {
+                        return win_score * std::pow(0.99, tree_depth + depth);
+                    }
+                    return win_score;
                 }
                 return 0.5; // Staled
             }
@@ -62,14 +67,14 @@ namespace ChessSimulator {
             if (depth >= max_rollout_depth || board.halfMoveClock() >= 100) {
 
                 int score = ChessSimulator::evaluate(board);
+                int relative_score = (board.sideToMove() == start_turn) ? score : -score;
+                double win_probability = 1.0 / (1.0 + std::pow(10.0, -relative_score / 400.0));
 
                 // Checks to see who is winning
-                int relative_score = score;
-                if (board.sideToMove() != start_turn) {
-                    relative_score = -score;
+                if (win_probability > 0.5) {
+                    win_probability *= std::pow(0.99, tree_depth + depth);
                 }
-
-                return 1.0 / (1.0 + std::pow(10.0, -relative_score / 400.0));
+                return win_probability;
 
                 //double win_probability = 1.0 / (1.0 + std::pow(10.0, -relative_score / 400.0));
 
@@ -202,6 +207,8 @@ namespace ChessSimulator {
             MCTSNode* current = root;
             chess::Board current_board = board;
 
+            int tree_depth = 0;
+
             // Select
             while (!current->isLeaf()) {
                 chess::Movelist legal_moves;
@@ -226,6 +233,8 @@ namespace ChessSimulator {
                 }
                 current = best_child;
                 current_board.makeMove(current->move_from_parent);
+
+                tree_depth++;
             }
 
             /*
@@ -268,11 +277,14 @@ namespace ChessSimulator {
 
                     current = current->children[0];
                     current_board.makeMove(current->move_from_parent);
+
+                    tree_depth++;
                 }
             }
 
             // Sim
-            double result = rollout(current_board);
+            //double result = rollout(current_board);
+            double result = rollout(current_board, tree_depth);
 
             // Backprop
             backpropagate(current, 1.0 - result);
