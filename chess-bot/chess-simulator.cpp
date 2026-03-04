@@ -13,10 +13,6 @@ using namespace ChessSimulator;
 
 namespace ChessSimulator {
   extern std::unordered_map<uint64_t, int> evalcache;
-
-  int minimax(chess::Board& board, int depth, int alpha, int beta,
-              std::chrono::time_point<std::chrono::steady_clock> startTime,
-              int time_limit, bool& time_up);
 }
 
 std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
@@ -39,42 +35,7 @@ std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
     return "";
   }
 
-  auto startTime = std::chrono::steady_clock::now();
-  int budget = timeLimitMs > 0 ? timeLimitMs : 10000;
-  int time_limit = budget - 500;
-  bool time_up = false;
-
-  chess::Move bestMoveGlobal = moves[0];
-
-  // Get the iterative deepening back working hopefully helps
-  for (int depth = 1; depth <= 30; depth++) {
-    int bestScore = -1000000;
-    chess::Move currentBestMove = moves[0];
-
-    std::sort(moves.begin(), moves.end(), [&](const chess::Move& a, const chess::Move& b) {
-        return board.isCapture(a) > board.isCapture(b);
-    });
-
-    for (auto& move : moves) {
-      board.makeMove(move);
-      int score = -ChessSimulator::minimax(board, depth - 1, -1000000, 1000000, startTime, time_limit, time_up);
-      board.unmakeMove(move);
-
-      if (score > bestScore) {
-        bestScore = score;
-        currentBestMove = move;
-      }
-    }
-
-    bestMoveGlobal = currentBestMove;
-
-    // PLEASE CHECKMATE
-    if (bestScore > 29000) {
-      break;
-    }
-  }
-
-  return chess::uci::moveToUci(bestMoveGlobal);
+  return getBestMoveMCTS(fen, timeLimitMs);
 
   /*
 
