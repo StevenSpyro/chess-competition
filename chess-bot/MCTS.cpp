@@ -44,13 +44,13 @@ namespace ChessSimulator {
         chess::Color start_turn = board.sideToMove();
 
         if (board.halfMoveClock() >= 100 || board.isRepetition()) {
-            return 0.5;
+            return 0.45;
         }
 
         chess::Movelist moves;
         chess::movegen::legalmoves(moves, board);
 
-        //static std::mt19937 gen(std::chrono::system_clock::now().time_since_epoch().count());
+        static std::mt19937 gen(std::chrono::system_clock::now().time_since_epoch().count());
 
         if (moves.empty()) {
             if (board.inCheck()) {
@@ -58,13 +58,16 @@ namespace ChessSimulator {
                 if (board.sideToMove() == start_turn) return 0.0;
                 return 0.51 + (0.49 * std::pow(0.99, tree_depth));
             }
-            return 0.5; // Stale
+            return 0.45; // Stale
         }
 
         int score = ChessSimulator::quiescence(board, -1000000, 1000000, 0);
         int relative_score = (board.sideToMove() == start_turn) ? score : -score;
 
         int clamped_score = std::max(-2000, std::min(2000, relative_score));
+
+        double advantage = clamped_score / 4000.0;
+        advantage *= std::pow(0.99, tree_depth);
 
         double win_prob = 0.5 + (clamped_score / 4000.0);
 
@@ -367,7 +370,7 @@ namespace ChessSimulator {
             global_mcts_root->parent = nullptr;
         }
 
-
+        /*
         std::cout << "Total Iterations: " << root->visits << std::endl;
         if (best_child) {
             double win_rate = (best_child->wins / best_child->visits) * 100.0;
@@ -375,6 +378,7 @@ namespace ChessSimulator {
             std::cout << "Node Visits: " << best_child->visits << std::endl;
             std::cout << "Expected Win Rate: " << win_rate << "%" << std::endl;
         }
+        */
 
 
         //delete root;
