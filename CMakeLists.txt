@@ -189,7 +189,8 @@ if(EMSCRIPTEN)
             set_target_properties(chessgui PROPERTIES SUFFIX ".html")
             target_link_options(chessgui PRIVATE
                 -sASYNCIFY
-                -sASYNCIFY_STACK_SIZE=65536
+                -sASYNCIFY_STACK_SIZE=8388608
+                -sSTACK_SIZE=8388608
                 -sALLOW_MEMORY_GROWTH=1
                 --shell-file ${CMAKE_SOURCE_DIR}/chess-gui/shell.html
             )
@@ -198,6 +199,7 @@ if(EMSCRIPTEN)
         # CLI: build as HTML with custom shell (no prompt() for stdin)
         set_target_properties(chesscli PROPERTIES SUFFIX ".html")
         target_link_options(chesscli PRIVATE
+            -sSTACK_SIZE=8388608
             -sALLOW_MEMORY_GROWTH=1
             -sEXIT_RUNTIME=1
             -sINVOKE_RUN=0
@@ -215,6 +217,7 @@ if(EMSCRIPTEN)
         -sMODULARIZE=1
         -sEXPORT_ES6=1
         -sEXPORT_NAME=ChessBot
+        -sSTACK_SIZE=8388608
         -sALLOW_MEMORY_GROWTH=1
         -sENVIRONMENT=web,worker
     )

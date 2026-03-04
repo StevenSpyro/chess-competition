@@ -33,6 +33,7 @@ const initialGameState: GameState = {
 
 function App() {
   const [bots, setBots] = useState<BotInfo[]>([]);
+  const [selectedTournamentBots, setSelectedTournamentBots] = useState<Set<string>>(new Set());
   const [whitePlayer, setWhitePlayer] = useState<PlayerInfo | null>(null);
   const [blackPlayer, setBlackPlayer] = useState<PlayerInfo | null>(null);
   const [gameState, setGameState] = useState<GameState>(initialGameState);
@@ -53,7 +54,11 @@ function App() {
         if (!res.ok) throw new Error(`Failed to fetch manifest: ${res.status}`);
         return res.json();
       })
-      .then((data: BotInfo[]) => setBots(data))
+      .then((data: BotInfo[]) => {
+        // ensure undefined updatedAt is normalized to undefined
+        const normalized = data.map((b) => ({ ...b, updatedAt: b.updatedAt || undefined }));
+        setBots(normalized);
+      })
       .catch((err) => setError(`Could not load bot list: ${err.message}`));
   }, []);
 
@@ -207,11 +212,12 @@ function App() {
   };
 
   const handleStartTournament = async () => {
-    if (tournamentRunning || bots.length < 2) return;
+    const useBots = bots.filter((b) => selectedTournamentBots.has(b.username));
+    if (tournamentRunning || useBots.length < 2) return;
     setError(null);
     setTournamentRunning(true);
     try {
-      const ctx = await createBracketsTournament(bots);
+      const ctx = await createBracketsTournament(useBots);
       const { manager, storage, stageId, participantMap } = ctx;
 
       const trackHeadToHead = (h2h: Record<string, { wins: number; losses: number }>, winner: BotInfo, loser: BotInfo) => {
@@ -385,6 +391,40 @@ function App() {
   const boardOrientation: 'white' | 'black' =
     whitePlayer?.type === 'bot' && blackPlayer?.type === 'human' ? 'black' : 'white';
 
+  const formatDate = (isoString?: string): string => {
+    if (!isoString) return 'Unknown date';
+    try {
+      return new Date(isoString).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch {
+      return 'Invalid date';
+    }
+  };
+
+  const toggleBotSelection = (username: string) => {
+    const newSet = new Set(selectedTournamentBots);
+    if (newSet.has(username)) {
+      newSet.delete(username);
+    } else {
+      newSet.add(username);
+    }
+    setSelectedTournamentBots(newSet);
+  };
+
+  const selectAllBots = () => {
+    setSelectedTournamentBots(new Set(bots.map((b) => b.username)));
+  };
+
+  const clearAllBots = () => {
+    setSelectedTournamentBots(new Set());
+  };
+
+  // Sort bots by updatedAt (newest first)
+  const sortedBots = [...bots].sort((a, b) => {
+    const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+    const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+    return dateB - dateA;
+  });
+
   return (
     <div className="app">
       <header className="app-header">
@@ -416,6 +456,51 @@ function App() {
         </p>
         <div className="tournament-actions">
           <div className="tournament-controls">
+            <h3>Select Bots for Tournament</h3>
+            <div className="bot-selection-buttons">
+              <button
+                className="btn-secondary"
+                onClick={selectAllBots}
+                disabled={tournamentRunning}
+              >
+                Select All
+              </button>
+              <button
+                className="btn-secondary"
+                onClick={clearAllBots}
+                disabled={tournamentRunning}
+              >
+                Clear All
+              </button>
+              <span className="bot-count">{selectedTournamentBots.size} selected</span>
+            </div>
+          </div>
+
+          <div className="tournament-bot-list">
+            {sortedBots.map((bot) => (
+              <div
+                key={bot.username}
+                className={`tournament-bot-item ${selectedTournamentBots.has(bot.username) ? 'selected' : ''}`}
+              >
+                <input
+                  type="checkbox"
+                  id={`bot-${bot.username}`}
+                  checked={selectedTournamentBots.has(bot.username)}
+                  onChange={() => toggleBotSelection(bot.username)}
+                  disabled={tournamentRunning}
+                />
+                <label htmlFor={`bot-${bot.username}`} className="bot-item-label">
+                  <img src={bot.avatar} alt={bot.username} className="bot-item-avatar" />
+                  <div className="bot-item-info">
+                    <span className="bot-item-name" title={bot.updatedAt || ''}>{bot.username}</span>
+                    <span className="bot-item-date" title={bot.updatedAt || ''}>{formatDate(bot.updatedAt)}</span>
+                  </div>
+                </label>
+              </div>
+            ))}
+          </div>
+
+          <div className="tournament-controls">
             <label htmlFor="tournament-move-delay">Move Delay (ms):</label>
             <input
               id="tournament-move-delay"
@@ -446,7 +531,9 @@ function App() {
           <button
             className="btn-start"
             onClick={handleStartTournament}
-            disabled={tournamentActive || bots.length < 2 || loading}
+            disabled={
+              tournamentActive || selectedTournamentBots.size < 2 || loading
+            }
           >
             {tournamentActive ? 'Tournament Running...' : 'Start Tournament'}
           </button>

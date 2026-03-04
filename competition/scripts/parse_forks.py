@@ -4,7 +4,11 @@
 Usage:
     parse_forks.py <forks_json_file>
 
-Outputs one line per fork:  username|clone_url|avatar_url|html_url
+Outputs one line per fork:
+    username|clone_url|avatar_url|html_url|pushed_at
+
+pushed_at is the ISO timestamp GitHub provides for the last time code was
+pushed to the fork (i.e. the most recent commit date visible on the repo).
 """
 
 import json
@@ -27,7 +31,10 @@ def main() -> None:
         clone_url = fork.get("clone_url", "")
         avatar_url = owner.get("avatar_url", "")
         html_url = fork.get("html_url", "")
-        print(f"{login}|{clone_url}|{avatar_url}|{html_url}")
+        # pushed_at reflects the last time code was actually pushed to the fork,
+        # unlike updated_at which changes on any metadata update (e.g. parent sync).
+        pushed_at = fork.get("pushed_at", "")
+        print(f"{login}|{clone_url}|{avatar_url}|{html_url}|{pushed_at}")
 
 
 if __name__ == "__main__":
