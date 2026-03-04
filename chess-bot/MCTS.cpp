@@ -175,17 +175,17 @@ namespace ChessSimulator {
 
         // Timer just like the Minimax
         int budget = timeLimitMs > 0 ? timeLimitMs : 10000;
-        int buffer = 50; // Buffer time
+        int buffer = 200; // Buffer time
 
         if (budget <= buffer) {
             buffer = 0;
         }
 
         int iterations = 0;
-        int max_iterations = 100000;
+        //int max_iterations = 100000; shouldn't need now
         double exploration_constant = 0.5;
 
-        while (iterations < max_iterations) {
+        while (true) {
 
             if (iterations % 50 == 0) {
                 auto now = std::chrono::steady_clock::now();
@@ -311,7 +311,7 @@ namespace ChessSimulator {
             global_mcts_root->parent = nullptr;
         }
 
-        /*
+
         std::cout << "Total Iterations: " << root->visits << std::endl;
         if (best_child) {
             double win_rate = (best_child->wins / best_child->visits) * 100.0;
@@ -319,7 +319,7 @@ namespace ChessSimulator {
             std::cout << "Node Visits: " << best_child->visits << std::endl;
             std::cout << "Expected Win Rate: " << win_rate << "%" << std::endl;
         }
-        */
+
 
         //delete root;
         return chess::uci::moveToUci(best_move);
