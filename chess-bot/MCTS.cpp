@@ -8,7 +8,9 @@
 namespace ChessSimulator {
 
     static MCTSNode* global_mcts_root = nullptr;
-    static int mcts_node_count = 0; // Tracks RAM usage
+
+    // RAM SHIELD: Tracks exactly how much memory the tree is using
+    static int mcts_node_count = 0;
 
     MCTSNode::MCTSNode(MCTSNode* p, chess::Move m, uint64_t h)
         : parent(p), move_from_parent(m), hash(h), wins(0.0), visits(0) {
@@ -33,7 +35,7 @@ namespace ChessSimulator {
 
     double rollout(chess::Board board, int tree_depth) {
         if (board.halfMoveClock() >= 100 || board.isRepetition()) {
-            return 0.5; // Draw bad
+            return 0.45; // Penalize draw
         }
 
         chess::Movelist moves;
@@ -41,25 +43,22 @@ namespace ChessSimulator {
 
         if (moves.empty()) {
             if (board.inCheck()) {
-                // mated.
-                return 0.51 + (0.49 * std::pow(0.99, tree_depth));
+                return 1.0;
             }
-            return 0.5; // Stalemate
+            return 0.45; // Stalemate
         }
 
-        int current_player_score = ChessSimulator::quiescence(board, -1000000, 1000000, 0);
-        int move_maker_score = -current_player_score;
-        int clamped_score = std::max(-2000, std::min(2000, move_maker_score));
+        int score_B = ChessSimulator::quiescence(board, -1000000, 1000000, 0);
+        int score_A = -score_B;
+        int clamped_score = std::max(-2000, std::min(2000, score_A));
 
+        // Prefers faster wins
         double advantage = clamped_score / 4000.0;
-        advantage *= std::pow(0.99, tree_depth); // Decay
+        advantage *= std::pow(0.99, tree_depth);
 
-        double win_prob = 0.5 + advantage;
+        double win_prob_A = 0.5 + advantage;
 
-        if (win_prob > 0.999) win_prob = 0.999;
-        if (win_prob < 0.001) win_prob = 0.001;
-
-        return win_prob;
+        return std::max(0.001, std::min(0.999, win_prob_A));
     }
 
     void backpropagate(MCTSNode* node, double result) {
@@ -121,25 +120,23 @@ namespace ChessSimulator {
         auto startTime = std::chrono::steady_clock::now();
 
         int budget = timeLimitMs > 0 ? timeLimitMs : 10000;
-        int buffer = 500;
+        int buffer = 200;
 
         if (budget <= buffer) {
             buffer = 0;
         }
 
-        int root_eval = ChessSimulator::evaluate(board);
-        bool avoid_draw = root_eval > -50;
-
         int iterations = 0;
-        int max_iterations = 2000000;
         double exploration_constant = 0.5;
 
-        while (iterations < max_iterations) {
+        // Should be 10 seconds
+        while (true) {
 
-            if (iterations % 50 == 0) {
+            // Be quick
+            if ((iterations & 255) == 0) {
                 auto now = std::chrono::steady_clock::now();
                 if (std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count() >= (budget - buffer)) {
-                    break;
+                    break; // Time is up!
                 }
             }
             iterations++;
@@ -181,7 +178,7 @@ namespace ChessSimulator {
             if (!is_terminal) {
                 if (current->visits > 0 || current == root) {
 
-                    // Limit mem since that might be an issue still
+                    // Save mem
                     if (mcts_node_count < 50000) {
                         std::sort(moves.begin(), moves.end(), [&](const chess::Move& a, const chess::Move& b) {
                             return current_board.isCapture(a) > current_board.isCapture(b);
@@ -204,6 +201,9 @@ namespace ChessSimulator {
             backpropagate(current, 1.0 - result);
         }
 
+        int root_eval = ChessSimulator::evaluate(board);
+        bool avoid_draw = root_eval > -50;
+
         MCTSNode* best_child = nullptr;
         int max_visits = -1;
 
@@ -214,7 +214,7 @@ namespace ChessSimulator {
                 chess::Board test_board = board;
                 test_board.makeMove(child->move_from_parent);
                 if (test_board.isRepetition()) {
-                    effective_visits = -1;
+                    effective_visits = -1; // PHYSICALLY REJECT DRAW
                 }
             }
 
@@ -229,6 +229,7 @@ namespace ChessSimulator {
         if (best_child != nullptr) {
             best_move = best_child->move_from_parent;
         } else {
+            // PLEASE NO DRAW ON THREEFOLD
             best_move = root_moves[0];
             for (auto m : root_moves) {
                 chess::Board test_board = board;
