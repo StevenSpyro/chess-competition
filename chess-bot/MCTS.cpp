@@ -50,15 +50,14 @@ namespace ChessSimulator {
             chess::Movelist moves;
             chess::movegen::legalmoves(moves, board);
 
-            // 1. The game ends in stalemate or a checkmate
+            // The game ends in stalemate or a checkmate
             if (moves.empty()) {
                 if (board.inCheck()) {
-                    double win_score = (board.sideToMove() == start_turn) ? 0.0 : 1.0;
-
-                    if (win_score > 0.5) {
-                        return win_score * std::pow(0.99, tree_depth + depth);
+                    if (board.sideToMove() == start_turn) {
+                        return 0.0; // Mated
+                    } else {
+                        return 0.51 + (0.49 * std::pow(0.99, tree_depth + depth));
                     }
-                    return win_score;
                 }
                 return 0.5; // Staled
             }
@@ -68,13 +67,7 @@ namespace ChessSimulator {
 
                 int score = ChessSimulator::evaluate(board);
                 int relative_score = (board.sideToMove() == start_turn) ? score : -score;
-                double win_probability = 1.0 / (1.0 + std::pow(10.0, -relative_score / 400.0));
-
-                // Checks to see who is winning
-                if (win_probability > 0.5) {
-                    win_probability *= std::pow(0.99, tree_depth + depth);
-                }
-                return win_probability;
+                return 1.0 / (1.0 + std::pow(10.0, -relative_score / 400.0));
 
                 //double win_probability = 1.0 / (1.0 + std::pow(10.0, -relative_score / 400.0));
 
