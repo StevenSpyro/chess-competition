@@ -9,6 +9,8 @@ namespace ChessSimulator {
 
     static MCTSNode* global_mcts_root = nullptr;
 
+    static int mcts_node_count = 0;
+
     MCTSNode::MCTSNode(MCTSNode* p, chess::Move m, uint64_t h)
         : parent(p), move_from_parent(m), hash(h), wins(0.0), visits(0) {}
 
@@ -147,7 +149,7 @@ namespace ChessSimulator {
         // Select
         while (iterations < max_iterations) {
 
-            if (iterations % 10 == 0) {
+            if (iterations % 50 == 0) {
                 auto now = std::chrono::steady_clock::now();
                 if (std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count() >= (budget - buffer)) {
                     break;
