@@ -7,6 +7,7 @@
 #include <chrono>
 #include <random>
 #include <limits>
+#include <algorithm>
 
 namespace ChessSimulator {
 
@@ -205,7 +206,7 @@ namespace ChessSimulator {
                 chess::movegen::legalmoves(legal_moves, current_board);
 
                 if (legal_moves.empty() || current_board.halfMoveClock() >= 100 || current_board.isRepetition()) {
-                    break; // Terminal state reached safely
+                    break;
                 }
 
                 MCTSNode* best_child = nullptr;
@@ -293,6 +294,8 @@ namespace ChessSimulator {
         chess::Move best_move = root_moves[0];
 
         if (best_child) {
+            best_move = best_child->move_from_parent;
+
             // Remove child from root
             for (auto& child : global_mcts_root->children) {
                 if (child != best_child) {
