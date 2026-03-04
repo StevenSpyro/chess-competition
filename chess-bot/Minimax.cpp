@@ -146,6 +146,7 @@ namespace ChessSimulator {
         blackEval += evalPiece(PieceType::QUEEN, Color::BLACK, queen_pst);
         blackEval += evalPiece(PieceType::KING, Color::BLACK, active_king_pst);
 
+        /*
         chess::Movelist moves;
         chess::movegen::legalmoves(moves, board);
 
@@ -159,6 +160,15 @@ namespace ChessSimulator {
         int final_eval = finalScore * perspective;
 
         if (evalcache.size() < 500000) {
+            evalcache[hashKey] = final_eval;
+        }
+        */
+
+        int finalScore = whiteEval - blackEval;
+        int perspective = (board.sideToMove() == Color::WHITE) ? 1 : -1;
+        int final_eval = finalScore * perspective;
+
+        if (evalcache.size() < 100000) {
             evalcache[hashKey] = final_eval;
         }
 
@@ -203,17 +213,18 @@ namespace ChessSimulator {
     }
 
     int minimax(chess::Board& board, int depth, int alpha, int beta) {
-        if (depth == 0) return evaluate(board);
+        if (depth == 0) return quiescence(board, alpha, beta, 0);
+        if (board.isRepetition() || board.halfMoveClock() >= 100) return 0;
 
         chess::Movelist moves;
         chess::movegen::legalmoves(moves, board);
 
         if (moves.size() == 0) {
-            if (board.inCheck()) return -std::numeric_limits<int>::max() + (10 - depth); // Game ends in Checkmate
-            return 0; // Game ends in Stalemate
+            if (board.inCheck()) return -30000 + (20 - depth);
+            return 0; // Stalemate
         }
 
-        int bestScore = std::numeric_limits<int>::min();
+        //int bestScore = std::numeric_limits<int>::min();
 
         // Makes pruning faster
         std::sort(moves.begin(), moves.end(), [&](const chess::Move& a, const chess::Move& b) {

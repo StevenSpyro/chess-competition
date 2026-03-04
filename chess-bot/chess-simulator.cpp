@@ -23,8 +23,8 @@ std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
   // extra points if you create your own board/move representation instead of
   // using the one provided by the library
 
-  if (evalcache.size() > 200000) {
-    evalcache.clear();
+  if (ChessSimulator::evalcache.size() > 100000) {
+    ChessSimulator::evalcache.clear();
   }
 
   chess::Board board(fen);
@@ -33,6 +33,46 @@ std::string ChessSimulator::Move(std::string fen, int timeLimitMs) {
 
   if(moves.size() == 0) {
     return "";
+  }
+
+  auto startTime = std::chrono::steady_clock::now();
+  int budget = timeLimitMs > 0 ? timeLimitMs : 10000;
+  int buffer = 500;
+
+  chess::Move bestMoveGlobal = moves[0];
+
+  // Get the iterative deepening back working hopefully helps
+  for (int depth = 1; depth <= 30; depth++) {
+    int bestScore = -1000000;
+    chess::Move currentBestMove = moves[0];
+
+    std::sort(moves.begin(), moves.end(), [&](const chess::Move& a, const chess::Move& b) {
+        return board.isCapture(a) > board.isCapture(b);
+    });
+
+    for (auto& move : moves) {
+      board.makeMove(move);
+      int score = -ChessSimulator::minimax(board, depth - 1, -1000000, 1000000);
+      board.unmakeMove(move);
+
+      if (score > bestScore) {
+        bestScore = score;
+        currentBestMove = move;
+      }
+
+      // Time check
+      auto now = std::chrono::steady_clock::now();
+      if (std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count() >= (budget - buffer)) {
+        return chess::uci::moveToUci(bestMoveGlobal);
+      }
+    }
+
+    bestMoveGlobal = currentBestMove;
+
+    // PLEASE CHECKMATE
+    if (bestScore > 29000) {
+      break;
+    }
   }
 
   return getBestMoveMCTS(fen, timeLimitMs);
