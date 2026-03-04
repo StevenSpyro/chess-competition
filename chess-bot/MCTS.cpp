@@ -44,7 +44,7 @@ namespace ChessSimulator {
         chess::Color start_turn = board.sideToMove();
 
         if (board.halfMoveClock() >= 100 || board.isRepetition()) {
-            return 0.45;
+            return 0.55;
         }
 
         chess::Movelist moves;
@@ -54,11 +54,10 @@ namespace ChessSimulator {
 
         if (moves.empty()) {
             if (board.inCheck()) {
-                // Checkmated
-                if (board.sideToMove() == start_turn) return 0.0;
-                return 0.51 + (0.49 * std::pow(0.99, tree_depth));
+                // Mate
+                return 0.0;
             }
-            return 0.45; // Stale
+            return 0.55; // Stale
         }
 
         int score = ChessSimulator::quiescence(board, -1000000, 1000000, 0);
@@ -66,6 +65,7 @@ namespace ChessSimulator {
 
         int clamped_score = std::max(-2000, std::min(2000, relative_score));
 
+        // Decay
         double advantage = clamped_score / 4000.0;
         advantage *= std::pow(0.99, tree_depth);
 
@@ -241,7 +241,7 @@ namespace ChessSimulator {
         }
 
         int iterations = 0;
-        //int max_iterations = 100000; shouldn't need now
+        int max_iterations = 100000;
         double exploration_constant = 0.5;
 
         int root_eval = ChessSimulator::evaluate(board);
@@ -249,7 +249,7 @@ namespace ChessSimulator {
 
         bool avoid_draw = root_perspective > -50;
 
-        while (true) {
+        while (iterations < max_iterations) {
 
             if (iterations % 10 == 0) {
                 auto now = std::chrono::steady_clock::now();
