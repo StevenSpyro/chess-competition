@@ -69,7 +69,7 @@ namespace ChessSimulator {
         double advantage = clamped_score / 4000.0;
         advantage *= std::pow(0.99, tree_depth);
 
-        double win_prob = 0.5 + (clamped_score / 4000.0);
+        double win_prob = 0.5 + advantage;
 
         if (win_prob > 0.999) win_prob = 0.999;
         if (win_prob < 0.001) win_prob = 0.001;
@@ -244,6 +244,11 @@ namespace ChessSimulator {
         //int max_iterations = 100000; shouldn't need now
         double exploration_constant = 0.5;
 
+        int root_eval = ChessSimulator::evaluate(board);
+        int root_perspective = (board.sideToMove() == chess::Color::WHITE) ? root_eval : -root_eval;
+
+        bool avoid_draw = root_perspective > -50;
+
         while (true) {
 
             if (iterations % 10 == 0) {
@@ -342,9 +347,20 @@ namespace ChessSimulator {
 
         MCTSNode* best_child = nullptr;
         int max_visits = -1;
-        for (auto child : root -> children) {
-            if (child -> visits > max_visits) {
-                max_visits = child -> visits;
+        for (auto child : root->children) {
+
+            int effective_visits = child->visits;
+
+            if (avoid_draw) {
+                chess::Board test_board = board;
+                test_board.makeMove(child->move_from_parent);
+                if (test_board.isRepetition()) {
+                    effective_visits = 0;
+                }
+            }
+
+            if (effective_visits > max_visits) {
+                max_visits = effective_visits;
                 best_child = child;
             }
         }
